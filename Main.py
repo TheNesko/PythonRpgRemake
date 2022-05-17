@@ -44,7 +44,7 @@ class Player:
     
     def RemoveEquipment(self,ItemName):
         try:
-            item = FindItem(ItemName)
+            item = Item.FindItem(ItemName)
         except:
             print('Item not found')
             Game.wait_for_input()
@@ -88,7 +88,7 @@ class Player:
     def AddStatsFromEquipment(self):
         for equipment in self.Equiped:
             if self.Equiped[equipment] != None:
-                item = FindItem(self.Equiped[equipment])
+                item = Item.FindItem(self.Equiped[equipment])
                 self.EquipmentMaxHealth += item.MaxHealth
                 self.EquipmentAttack += item.Damage
                 self.EquipmentDefence += item.Defence
@@ -206,18 +206,18 @@ class Item:
             print("You've used %s" % self.name)
         else:
             print("You've exchanged a %s for %s" % (player.Equiped[self.EquipPlace], self.name))
-            player.Inventory.append(FindItem(player.Equiped[self.EquipPlace]))
+            player.Inventory.append(Item.FindItem(player.Equiped[self.EquipPlace]))
             player.Equiped[self.EquipPlace] = self.name
             player.Inventory.remove(self)
         player.ResetStatsFromEquipment()
         player.AddStatsFromEquipment()
         Game.wait_for_input()
 
-def FindItem(ItemName):
-    for x in Item.ItemBase:
-        if x.name == ItemName:
-            return x
-    return None
+    def FindItem(ItemName):
+        for x in Item.ItemBase:
+            if x.name == ItemName:
+                return x
+        return None
 
 class Monster:
 
