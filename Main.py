@@ -1,4 +1,5 @@
-import time, sys, os, random, json, msvcrt
+import time, sys, os, random, json
+from Engine import Game
 
 #---------
 GameVersion= "0.0.1"
@@ -8,6 +9,7 @@ try:
 except OSError as error: 
     pass
 #---------
+
 
 class Player:
     def __init__(self):
@@ -45,27 +47,27 @@ class Player:
             item = FindItem(ItemName)
         except:
             print('Item not found')
-            msvcrt.getch()
+            Game.wait_for_input()
             return
-        if not player.Equiped[item.EquipPlace] == None:
+        if player.Equiped[item.EquipPlace] != None:
             player.Equiped[item.EquipPlace] = None
             player.Inventory.append(item)
             print("You've taken off a %s" % item.name)
         else:
             print("You don't have that item equiped")
-        msvcrt.getch()
+        Game.wait_for_input()
 
     def UsePotion(self,Name:str):
         match Name:
             case 'HealthPotion':
                 if self.Potions[Name] <= 0:
                     print("You don't have any Health Potions")
-                    msvcrt.getch()
+                    Game.wait_for_input()
                     return
                 self.Potions[Name] -= 1
                 player.SetHealth(player.GetHealth() + 10)
                 print("You've used a Health Potion")
-                msvcrt.getch()
+                Game.wait_for_input()
     
     def SetAllStats(self,NewStats,Class):
         self.Class = Class
@@ -84,31 +86,12 @@ class Player:
         }
     
     def AddStatsFromEquipment(self):
-        if not self.Equiped['Helmet'] == None:
-            item = FindItem(self.Equiped['Helmet'])
-            self.EquipmentMaxHealth += item.MaxHealth
-            self.EquipmentAttack += item.Damage
-            self.EquipmentDefence += item.Defence
-        if not self.Equiped['Chestplate'] == None:
-            item = FindItem(self.Equiped['Chestplate'])
-            self.EquipmentMaxHealth += item.MaxHealth
-            self.EquipmentAttack += item.Damage
-            self.EquipmentDefence += item.Defence
-        if not self.Equiped['Leggins'] == None:
-            item = FindItem(self.Equiped['Leggins'])
-            self.EquipmentMaxHealth += item.MaxHealth
-            self.EquipmentAttack += item.Damage
-            self.EquipmentDefence += item.Defence
-        if not self.Equiped['LeftHand'] == None:
-            item = FindItem(self.Equiped['LeftHand'])
-            self.EquipmentMaxHealth += item.MaxHealth
-            self.EquipmentAttack += item.Damage
-            self.EquipmentDefence += item.Defence
-        if not self.Equiped['RightHand'] == None:
-            item = FindItem(self.Equiped['RightHand'])
-            self.EquipmentMaxHealth += item.MaxHealth
-            self.EquipmentAttack += item.Damage
-            self.EquipmentDefence += item.Defence
+        for equipment in self.Equiped:
+            if self.Equiped[equipment] != None:
+                item = FindItem(self.Equiped[equipment])
+                self.EquipmentMaxHealth += item.MaxHealth
+                self.EquipmentAttack += item.Damage
+                self.EquipmentDefence += item.Defence
         player.Stats['MaxHealth'] += self.EquipmentMaxHealth
         player.Stats['Attack'] += self.EquipmentAttack
         player.Stats['Defence'] += self.EquipmentDefence
@@ -146,21 +129,19 @@ class Player:
     def SetDefence(self,Value):
         self.Stats['Defence'] = Value
 
-player = Player()
-
 class CharacterClass:
-    def __init__(self,Name,MHP,AD,DF):
+
+    Classes = []
+
+    def __init__(self,Name:str,MaxHealth:int,Attack:int,Defence:int):
         self.Name = Name
         self.Stats = {
-            'Health' : MHP,
-            'MaxHealth' : MHP,
-            'Attack' : AD,
-            'Defence' : DF
+            'Health' : MaxHealth,
+            'MaxHealth' : MaxHealth,
+            'Attack' : Attack,
+            'Defence' : Defence
         }
-
-WarriorClass = CharacterClass('Worrior',100,30,50)
-RangerClass = CharacterClass('Ranger',70,20,40)
-MageClass = CharacterClass('Mage',50,60,10)
+        CharacterClass.Classes.append(self)
 
 class LootTable:
     def __init__(self):
@@ -198,25 +179,25 @@ class LootTable:
         rng = random.randint(1,self.AllWeights)
         for x in self.Loot:
             if rng <= x['MaxChance'] and rng >= x['MinChance']:
-                if not x['Item'] == None:
+                if x['Item'] != None:
                     self.Dropped = x
-        if not self.Dropped == None:
+        if self.Dropped != None:
             player.Inventory.append(self.Dropped['Item'])
-        # for x in self.Loot:
-        #     if x["Item"] != None:
-        #         print(x['Item'].name,x)
-        # print(rng)
         if self.Dropped == None:
             return None
         return self.Dropped['Item'].name
 
 class Item:
+
+    ItemBase = []
+
     def __init__(self,Name:str,Damage:int,Defence:int,MaxHealth:int,EquipPlace:str):
         self.name = Name
         self.Damage = Damage
         self.Defence = Defence
         self.MaxHealth = MaxHealth
         self.EquipPlace = EquipPlace
+        Item.ItemBase.append(self)
     
     def Use(self):
         if player.Equiped[self.EquipPlace] == None:
@@ -230,7 +211,41 @@ class Item:
             player.Inventory.remove(self)
         player.ResetStatsFromEquipment()
         player.AddStatsFromEquipment()
-        msvcrt.getch()
+        Game.wait_for_input()
+
+def FindItem(ItemName):
+    for x in Item.ItemBase:
+        if x.name == ItemName:
+            return x
+    return None
+
+class Monster:
+
+    MonsterBase = []
+
+    def __init__(self,Name:str,MaxHealth:int,Attack:int,Defence:int,LootTable:LootTable):
+        self.name = Name
+        self.Stats = {
+            'Health' : MaxHealth,
+            'MaxHealth' : MaxHealth,
+            'Attack' : Attack,
+            'Defence' : Defence
+        }
+        self.LootTable = LootTable
+        Monster.MonsterBase.append(self)
+    
+    def SetMaxHealth(self):
+        self.Stats['Health'] = self.Stats['MaxHealth']
+
+
+#=========Instances=========
+player = Player()
+#----Classes---
+WarriorClass = CharacterClass('Worrior',70,30,50)
+RangerClass = CharacterClass('Ranger',100,25,40)
+MageClass = CharacterClass('Mage',50,40,10)
+GodClass = CharacterClass('God',1000,1000,1000)
+#----Items-----
 
 Helmet = 'Helmet'
 Chestplate = 'Chestplate'
@@ -238,45 +253,39 @@ Leggins = 'Leggins'
 LeftHand = 'LeftHand'
 RightHand = 'RightHand'
 
-WoddenSword = Item('Wodden Sword',10,0,0,RightHand)
+#---Helmet---
+LeatherHelmet = Item('Leather Helmet',0,5,0,Helmet)
+#---Chestplate---
+Chainmail = Item('Chainmail',0,10,5,Chestplate)
+IronChestplate = Item('Iron Chestplate',0,30,10,Chestplate)
+#---Leggins---
+IronLeggins = Item('Iron Leggins',0,10,0,Leggins)
+#---LeftHand---
+WoodenShield = Item('Wooden Shield',-5,10,0,LeftHand)
+#---RightHand---
+WoodenSword = Item('Wooden Sword',5,0,0,RightHand)
 IronSword = Item('Iron Sword',20,0,0,RightHand)
-Chestplate = Item('Chestplate',0,30,10,Chestplate)
-
-ItemBase = []
-ItemBase.append(WoddenSword)
-ItemBase.append(IronSword)
-ItemBase.append(Chestplate)
-
-def FindItem(ItemName):
-    for x in ItemBase:
-        if x.name == ItemName:
-            return x
-    return None
-
-class Monster:
-    def __init__(self,Name:str,MHP,AD,DF,LootTable:LootTable):
-        self.name = Name
-        self.Stats = {
-            'Health' : MHP,
-            'MaxHealth' : MHP,
-            'Attack' : AD,
-            'Defence' : DF
-        }
-        self.LootTable = LootTable
-    
-    def SetMaxHealth(self):
-        self.Stats['Health'] = self.Stats['MaxHealth']
 
 #----Zombie----
 ZombieLoot = LootTable()
-ZombieLoot.addLoot(WoddenSword,8)
-ZombieLoot.addLoot(IronSword,3)
-ZombieLoot.addLoot(Chestplate,5)
-ZombieLoot.addLoot(None,20)
+ZombieLoot.addLoot(WoodenSword,8)
+ZombieLoot.addLoot(WoodenShield,5)
+ZombieLoot.addLoot(IronSword,2)
+ZombieLoot.addLoot(None,50)
 Zombie = Monster('Zombie',40,10,20,ZombieLoot)
 #----Skeleton----
-Skeleton = Monster('Skeleton',25,20,10,ZombieLoot)
+SkeletonLoot = LootTable()
+SkeletonLoot.addLoot(Chainmail,5)
+SkeletonLoot.addLoot(LeatherHelmet,10)
+SkeletonLoot.addLoot(None,100)
+Skeleton = Monster('Skeleton',25,20,10,SkeletonLoot)
+#-----Ghost-----
+GhostLoot = LootTable()
+GhostLoot.addLoot(None,100)
+Ghost = Monster('Ghost',10,1,500,GhostLoot)
 
+
+#===========================
 
 def ShowInventory():
     while True:
@@ -304,12 +313,6 @@ def ShowEquipment():
         print("Equipment")
         for x in player.Equiped:
             print(x,"-",player.Equiped[x])
-            '''
-            if player.Equiped[x] == None:
-                print(x,"-",player.Equiped[x])
-            else:
-                print(x,"-",player.Equiped[x])
-            '''
         print("\nType the name of and item you want to use\n0.Go back")
         x = input()
         Clear()
@@ -325,56 +328,53 @@ def Clear():
 def ChooseCharacter():
     Clear()
     while True:
-        print('Choose your character!\n1.Worrior\n2.Ranger\n3.Mage\n0.Menu')
-        character = int(msvcrt.getch())
+        print('Choose your character!')
+        for x in range(len(CharacterClass.Classes)):
+            print(x,".",CharacterClass.Classes[x].Name,sep="")
+        print("0.Menu")
+        character = int(Game.get_input())
         Clear()
-        match character:
-            case 1:
-                player.SetAllStats(WarriorClass.Stats,WarriorClass.Name)
-                break
-            case 2:
-                player.SetAllStats(RangerClass.Stats,RangerClass.Name)
-                break
-            case 3:
-                player.SetAllStats(MageClass.Stats,MageClass.Name)
-                break
-            case 0:
-                return 0
-            case _:
-                print("Character doesn't exist!")
+        if character in range(len(CharacterClass.Classes)):
+            player.SetAllStats(CharacterClass.Classes[character].Stats , CharacterClass.Classes[character].Name)
+            break
+        elif character == 0:
+            return 0
+        else:
+            print("Character doesn't exist!")
 
 def PrintStats():
     Clear()
+    print("Class: ",player.Class)
     print(player.GetHealth(),'/',player.GetMaxHealth(),' Health')
     print(player.GetAttack(),' Attack')
     print(player.GetDefence(),' Defence')
     print('Press any button to continue')
-    msvcrt.getch()
+    Game.wait_for_input()
+
+def RollNextEnemy() -> Monster:
+    value = random.randint(0,len(Monster.MonsterBase)-1)
+    return Monster.MonsterBase[value]
 
 def NextTurn():
-    rng = random.randint(0,10)
-    match rng:
-        case 0 | 3 | 2 | 7:
-            print('Lucky u nothing happend')
-            msvcrt.getch()
-        case 1 | 9 | 10:
-            print('Oh no you came across a Zombie')
-            msvcrt.getch()
-            Fight(Zombie)
-        case 5:
-            player.Potions['HealthPotion'] += 1
-            print('Wow! you found a Healing potion\nYou now have %s' % player.Potions['HealthPotion'])
-            msvcrt.getch()
-        case 4 | 6:
-            print('Spooky scary skeleton!')
-            msvcrt.getch()
-            Fight(Skeleton)
-        case 8:
-            rngItem = random.randint(0,len(ItemBase)-1)
-            founditem = ItemBase[rngItem]
-            player.Inventory.append(founditem)
-            print('You found an %s lying on the ground' % founditem.name)
-            msvcrt.getch()
+    rng = random.randint(0,100)
+    if rng in range(0,50):
+        print('Lucky u nothing happend')
+        Game.wait_for_input()
+    elif rng in range(51,80):
+        RandomEnemy = RollNextEnemy()
+        print('Oh no you came across a ',RandomEnemy.name)
+        Game.wait_for_input()
+        Fight(RandomEnemy)
+    elif rng in range(81,95):
+        player.Potions['HealthPotion'] += 1
+        print('Wow! you found a Healing potion\nYou now have %s' % player.Potions['HealthPotion'])
+        Game.wait_for_input()
+    elif rng in range(96,100):
+        rngItem = random.randint(0,len(Item.ItemBase)-1)
+        founditem = Item.ItemBase[rngItem]
+        player.Inventory.append(founditem)
+        print('You found an %s lying on the ground' % founditem.name)
+        Game.wait_for_input()
     
 def Fight(Monster:Monster):
     Clear()
@@ -383,47 +383,49 @@ def Fight(Monster:Monster):
     while True:
         if player.GetHealth() <= 0:
             print("You died!")
-            msvcrt.getch()
+            Game.wait_for_input()
             return 0
         print("You're now fighting ",enemy.name)
         print(enemy.Stats['Health'],'/',enemy.Stats['MaxHealth']," Health")
         print(enemy.Stats['Attack']," Attack")
         print(enemy.Stats['Defence']," Defence\n")
         print("1.Attack\n2.inventory\n3.Show Stats\n0.Run Away")
-        NextMove = int(msvcrt.getch())
+        next_move = Game.get_input()
         Clear()
-        match NextMove:
-            case 1:
+        match next_move:
+            case '1':
+                print('You dealt ',CalculateDamage(player.GetAttack(),enemy.Stats['Defence']),' damage ')
+                print(enemy.name," Health ",enemy.Stats['Health'],'/',enemy.Stats['MaxHealth'])
                 enemy.Stats['Health'] -= CalculateDamage(player.GetAttack(),enemy.Stats['Defence'])
                 if enemy.Stats['Health'] <= 0:
                     print("You've killed ",enemy.name)
                     dropped = enemy.LootTable.Roll()
                     if not dropped == None:   
                         print("It dropped a %s" %dropped)
-                    msvcrt.getch()
+                    Game.wait_for_input()
                     return 0
-                print("You dealt ",CalculateDamage(player.GetAttack(),enemy.Stats['Defence']),' damage')
                 player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
                 print(enemy.name," dealt ",CalculateDamage(enemy.Stats['Attack'],player.GetDefence()),' damage')
-                msvcrt.getch()
+                print("Player's Health ",player.Stats['Health'],'/',player.Stats['MaxHealth'])
+                Game.wait_for_input()
                 Clear()
-            case 2:
+            case '2':
                 ShowInventory()
                 Clear()
-            case 3:
+            case '3':
                 PrintStats()
                 Clear()
-            case 0:
+            case '0':
                 x = random.randint(0,1)
                 if x == 0:
                     print('You escaped safely')
-                    msvcrt.getch()
+                    Game.wait_for_input()
                     return 0
                 else:
                     print('You failled to escape')
                     player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
                     print(enemy.name," dealt ",CalculateDamage(enemy.Stats['Attack'],player.GetDefence()),' damage')
-                    msvcrt.getch()
+                    Game.wait_for_input()
                     Clear()
             case _:
                 Clear()
@@ -437,27 +439,26 @@ def Play():
     while True:
         if player.GetHealth() <= 0: return 0
         print('1.Next Turn\n2.Inventory \n3.Equipment \n4.Show Stats \n5.Save \n0.Menu')
-        answer = int(msvcrt.getch())
-        match answer:
-            case 1:
+        match Game.get_input():
+            case '1':
                 Clear()
                 NextTurn()
                 Clear()
-            case 2:
+            case '2':
                 ShowInventory()
                 Clear()
-            case 3:
+            case '3':
                 ShowEquipment()
                 Clear()
-            case 4:
+            case '4':
                 PrintStats()
                 Clear()
-            case 5:
+            case '5':
                 Clear()
                 print('Name a save file')
                 Save(input())
                 Clear()
-            case 0:
+            case '0':
                 while True:
                     Clear()
                     print("Do you want to save before quiting? Yes/No")
@@ -478,23 +479,22 @@ def Menu():
     Clear()
     Debug()
     print("Super EPIC game\n1.Play\n2.Load\n3.Your Saves\n4.Development Info\n0.Exit")
-    answer = int(msvcrt.getch())
-    match answer:
-        case 0:
+    match Game.get_input():
+        case '0':
             sys.exit()
-        case 1:
+        case '1':
             if ChooseCharacter() == 0: return 0
             Clear()
             Play()
-        case 2:
+        case '2':
             Clear()
             print('Type the name of a save file')
             if not Load(input()) == 0:
                 Play()
-        case 3:
+        case '3':
             Clear()
             SavesMenu()
-        case 4:
+        case '4':
             Clear()
             DeveloperInfoMenu()
         case _:
@@ -557,13 +557,13 @@ def Load(SaveName:str):
         return 0
     if data['GameVersion'] != GameVersion:
         print("Save game version is diffrent form curent version\nLoad? Yes/No")
-        if not input() == "yes":
-            return 0
+        if input() != "yes": return 0
+    
     player.SetAllStats(data['Player'],data['PlayerClass'])
     player.Potions = data['Inventory']['Potions']
     player.Equiped = data['Inventory']['Equiped']
     for x in data['Inventory']['Items']:
-        for y in ItemBase:
+        for y in Item.ItemBase:
             if x == y.name:
                 player.Inventory.append(y)
     return 1
@@ -580,12 +580,15 @@ def DeveloperInfoMenu():
         print("5.Expand loot tables and refactor it's code\n")
         print("currently I'm cleaning up some nasty code\n")
         print('Press any button to continue')
-        msvcrt.getch()
+        Game.wait_for_input()
         return
 
-while True:
-    Menu()
+
     
+
+if __name__ == '__main__':
+    while True:
+        Menu()
 
 
 '''
