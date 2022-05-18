@@ -2,7 +2,7 @@ import time, sys, os, random, json
 from Engine import Game
 
 #---------
-GameVersion= "0.0.1"
+GameVersion= "0.0.2"
 SaveFilePath = os.getenv('APPDATA')+"\SuperNiceGame"
 try: 
     os.mkdir(SaveFilePath) 
@@ -462,23 +462,31 @@ def Play():
                 while True:
                     Clear()
                     print("Do you want to save before quiting? Yes/No")
-                    match input():
-                        case 'Yes':
+                    match input().lower():
+                        case 'yes' | 'y':
                             Clear()
                             print('Name a save file')
                             Save(input())
                             Clear()
                             player.ResetStats()
                             return 0
-                        case 'No':
+                        case 'no' | 'n':
                             return 0
             case _:
                 Clear()
 
+def GameNamePrint():
+    print('____ ___  ____    ____ ____ _  _ ____ ',
+          '|__/ |__] | __    | __ |__| |\/| |___ ',
+          '|  \ |    |__]    |__] |  | |  | |___ ',
+          '',
+          '',sep="\n")
+
 def Menu():
     Clear()
     Debug()
-    print("Super EPIC game\n1.Play\n2.Load\n3.Your Saves\n4.Development Info\n0.Exit")
+    GameNamePrint()
+    print("1.Play\n2.Load\n3.Your Saves\n4.Development Info\n0.Exit")
     match Game.get_input():
         case '0':
             sys.exit()
@@ -557,7 +565,8 @@ def Load(SaveName:str):
         return 0
     if data['GameVersion'] != GameVersion:
         print("Save game version is diffrent form curent version\nLoad? Yes/No")
-        if input() != "yes": return 0
+        answer = input().lower()
+        if answer != "yes" or answer != "y": return 0
     
     player.SetAllStats(data['Player'],data['PlayerClass'])
     player.Potions = data['Inventory']['Potions']
@@ -584,9 +593,10 @@ def DeveloperInfoMenu():
         return
 
 
-    
 
 if __name__ == '__main__':
+    os.system('mode con: cols=55 lines=15')
+    os.system("title " + "Rpg Game")
     while True:
         Menu()
 
@@ -600,6 +610,9 @@ ex. Monster class is in Monsters.py file and contains
 Monster data base with every monster for eazy acces
 same with Items and add some utils like 
 Get_Input() insted of int(msvcrt.getch())
+---------------------------------------------
+Ideas:
+1. Evade chance (not to get damaged for monsters and classes)
 ---------------------------------------------
 TO DO:
 1.shop
