@@ -4,6 +4,7 @@ from Engine import Game
 #---------
 GameVersion= "0.0.3"
 SaveFilePath = os.getenv('APPDATA')+"\SuperNiceGame"
+CurrentSaveFileName = ""
 try: 
     os.mkdir(SaveFilePath) 
 except OSError as error: 
@@ -51,12 +52,9 @@ class Player:
                 break
     
     def RemoveEquipment(self,ItemName):
-        try:
-            item = Item.FindItem(ItemName)
-        except:
-            print('Item not found')
-            Game.wait_for_input()
-            return
+        item = Item.FindItem(ItemName)
+        if item == None: return
+
         if player.Equiped[item.EquipPlace] != None:
             player.Equiped[item.EquipPlace] = None
             player.Inventory.append(item)
@@ -531,6 +529,7 @@ def Play():
         match Game.get_input():
             case '1':
                 Game.Clear()
+                AutoSave()
                 NextTurn()
                 Game.Clear()
             case '2':
@@ -583,6 +582,7 @@ def Menu():
             sys.exit()
         case '1':
             if ChooseCharacter() != 0:
+                CurrentSaveFileName = ""
                 Game.Clear()
                 Play()
         case '2':
@@ -620,6 +620,10 @@ def SavesMenu():
                 if Play() == 0:
                     return
         
+def AutoSave():
+    if CurrentSaveFileName != "":
+        Save(CurrentSaveFileName)
+
 def Save(SaveName:str):
     Game.Clear()
     items = []
@@ -645,8 +649,10 @@ def Save(SaveName:str):
     time.sleep(1)
     with open(SaveFilePath+"/"+SaveName +".json", "w") as write_file:
         json.dump(Save, write_file)
+    CurrentSaveFileName = SaveName
 
 def Load(SaveName:str):
+    CurrentSaveFileName = SaveName
     Game.Clear()
     try:
         with open(SaveFilePath+"/"+SaveName+".json", "r") as read_file:
