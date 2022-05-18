@@ -2,7 +2,7 @@ import time, sys, os, random, json
 from Engine import Game
 
 #---------
-GameVersion= "0.0.2"
+GameVersion= "0.0.3"
 SaveFilePath = os.getenv('APPDATA')+"\SuperNiceGame"
 try: 
     os.mkdir(SaveFilePath) 
@@ -20,6 +20,7 @@ class Player:
             'Attack' : 1,
             'Defence' : 1
         }
+        self.Gold = 0
         self.Inventory = []
         self.Potions = {
             'HealthPotion' : 5
@@ -40,6 +41,13 @@ class Player:
         for x in player.Inventory:
             if Name == x.name:
                 x.Use()
+                break
+    
+    def SellItem(self,Name):
+        if len(player.Inventory) <= 0: return
+        for x in player.Inventory:
+            if Name == x.name:
+                x.Sell()
                 break
     
     def RemoveEquipment(self,ItemName):
@@ -82,6 +90,7 @@ class Player:
     
     def ResetStats(self):
         self.Class = None
+        self.Gold = 0
         self.Inventory.clear()
         self.Potions['HealthPotion'] = 5
         self.Equiped = {
@@ -232,6 +241,13 @@ class Item:
         player.ResetStatsFromEquipment()
         player.AddStatsFromEquipment()
         Game.wait_for_input()
+    
+    def Sell(self):
+        if len(player.Inventory) <= 0: return
+        for Item in range(len(player.Inventory)):
+            if player.Inventory[Item] == self:
+                player.Gold += self.Price
+                player.Inventory.remove(self)
 
     def FindItem(ItemName):
         for x in Item.ItemBase:
@@ -344,22 +360,36 @@ Ghost = Monster('Ghost',25,5,500,GhostLoot)
 def ShowInventory():
     while True:
         Clear()
-        print("Inventory")
+        print("Gold %s" % player.Gold)
+        print("\nInventory")
         if not len(player.Inventory) <= 0:
             for x in player.Inventory:
                 print(x.name)
         print("\nPotions")
         for x in player.Potions:
             print(x,"-",player.Potions[x])
-        print("\nType the name of and item you want to use\n0.Go back")
-        x = input()
+        print("\nType the name of and item you want to use\nType 'Sell' before an Item to sell it\n0.Go back")
+        answer = input()
         Clear()
-        match x:
+        if answer.lower().split(" ")[0] == "sell":
+            ItemForSell = answer.split(" ",1)[1]
+            if Item.FindItem(ItemForSell) != None:
+                ItemPrice = Item.FindItem(ItemForSell).Price
+                print("Do you want to sell %s for %s Gold" %(ItemForSell,ItemPrice))
+                match input().lower():
+                    case 'yes' | 'y':
+                        Clear()
+                        player.SellItem(ItemForSell)
+                        print("You just sold %s for %s Gold" %(ItemForSell,ItemPrice))
+                        Game.wait_for_input()
+                    case 'no' | 'n':
+                        pass
+        match answer:
             case '0':
                 return 0
             case _:
-                player.UsePotion(x)
-                player.UseItem(x)
+                player.UsePotion(answer)
+                player.UseItem(answer)
 
 def ShowEquipment():
     while True:
@@ -421,7 +451,6 @@ def NextTurn():
         player.SetHealth(player.GetHealth()+HpRested)
         print("And recoverd %s Health" % HpRested)
         print("Current Health %s/%s" %(round(player.GetHealth()),player.GetMaxHealth()))
-
         Game.wait_for_input()
     elif rng in range(51,80):
         RandomEnemy = RollNextEnemy()
@@ -501,22 +530,24 @@ def CalculateDamage(Damage:int,Defence:int):
 def Play():
     while True:
         if player.GetHealth() <= 0: return 0
-        print('1.Next Turn\n2.Inventory \n3.Equipment \n4.Show Stats \n5.Save \n0.Menu')
+        print('1.Next Turn\n2.Shop (WIP)\n3.Inventory \n4.Equipment \n5.Show Stats \n6.Save \n0.Menu')
         match Game.get_input():
             case '1':
                 Clear()
                 NextTurn()
                 Clear()
             case '2':
-                ShowInventory()
                 Clear()
             case '3':
-                ShowEquipment()
+                ShowInventory()
                 Clear()
             case '4':
-                PrintStats()
+                ShowEquipment()
                 Clear()
             case '5':
+                PrintStats()
+                Clear()
+            case '6':
                 Clear()
                 print('Name a save file')
                 Save(input())
@@ -606,6 +637,7 @@ def Save(SaveName:str):
             'Defence' : player.GetDefence()
         },
         "Inventory" : {
+            'Gold' : player.Gold,
             'Items' : items,
             'Potions' : player.Potions,
             'Equiped' : equiped
@@ -632,6 +664,7 @@ def Load(SaveName:str):
         if answer != "yes" or answer != "y": return 0
     
     player.SetAllStats(data['Player'],data['PlayerClass'])
+    player.Gold = data['Inventory']['Gold']
     player.Potions = data['Inventory']['Potions']
     player.Equiped = data['Inventory']['Equiped']
     for x in data['Inventory']['Items']:
@@ -667,15 +700,15 @@ if __name__ == '__main__':
 '''
 ---------------------------------------------
 Ideas:
-1. Evade chance (not to get damaged for monsters and classes)
+1. Evade chance (not to get damaged for monsters and classes useful for ranger class)
 ---------------------------------------------
 TO DO:
-1.shop
-2.Coins
-3.Add Coins To loot table
-4.Add EXP and LEVELS to player and Monsters
-5.Add more Items
-6.Add more Monsters
-7.Balance the game
+Gold ---DONE---
+shop ---NEXT---
+Add Gold To loot table
+Add more Items
+Add more Monsters
+Add EXP and LEVELS to player and Monsters
+Balance the game
 ---------------------------------------------
 '''
