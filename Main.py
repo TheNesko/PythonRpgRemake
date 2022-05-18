@@ -91,7 +91,7 @@ class Player:
     def ResetStats(self):
         self.Class = None
         self.Gold = 0
-        self.Inventory.clear()
+        self.Inventory.Game.Clear()
         self.Potions['HealthPotion'] = 5
         self.Equiped = {
             'Helmet' : None,
@@ -100,6 +100,15 @@ class Player:
             'LeftHand' : None,
             'RightHand' : None
         }
+    
+    def PrintStats(self):
+        Game.Clear()
+        print("Class: ",self.Class)
+        print(self.GetHealth(),'/',self.GetMaxHealth(),' Health')
+        print(self.GetAttack(),' Attack')
+        print(self.GetDefence(),' Defence')
+        print('Press any button to continue')
+        Game.wait_for_input()
     
     def AddStatsFromEquipment(self):
         for equipment in self.Equiped:
@@ -359,7 +368,7 @@ Ghost = Monster('Ghost',25,5,500,GhostLoot)
 
 def ShowInventory():
     while True:
-        Clear()
+        Game.Clear()
         print("Gold %s" % player.Gold)
         print("\nInventory")
         if not len(player.Inventory) <= 0:
@@ -370,7 +379,7 @@ def ShowInventory():
             print(x,"-",player.Potions[x])
         print("\nType the name of and item you want to use\nType 'Sell' before an Item to sell it\n0.Go back")
         answer = input()
-        Clear()
+        Game.Clear()
         if answer.lower().split(" ")[0] == "sell":
             ItemForSell = answer.split(" ",1)[1]
             if Item.FindItem(ItemForSell) != None:
@@ -378,7 +387,7 @@ def ShowInventory():
                 print("Do you want to sell %s for %s Gold" %(ItemForSell,ItemPrice))
                 match input().lower():
                     case 'yes' | 'y':
-                        Clear()
+                        Game.Clear()
                         player.SellItem(ItemForSell)
                         print("You just sold %s for %s Gold" %(ItemForSell,ItemPrice))
                         Game.wait_for_input()
@@ -393,31 +402,28 @@ def ShowInventory():
 
 def ShowEquipment():
     while True:
-        Clear()
+        Game.Clear()
         print("Equipment")
         for x in player.Equiped:
             print(x,"-",player.Equiped[x])
         print("\nType the name of and item you want to use\n0.Go back")
         x = input()
-        Clear()
+        Game.Clear()
         match x:
             case '0':
                 return 0
             case _:
                 player.RemoveEquipment(x)
 
-def Clear():
-    os.system('cls')
-
 def ChooseCharacter():
-    Clear()
+    Game.Clear()
     while True:
         print('Choose your character!')
         for x in range(len(CharacterClass.Classes)):
             print(x+1,".",CharacterClass.Classes[x].Name,sep="")
         print("0.Menu")
         character = int(Game.get_input())
-        Clear()
+        Game.Clear()
         if character == 0:
             return 0
         elif character in range(len(CharacterClass.Classes)+1):
@@ -425,15 +431,6 @@ def ChooseCharacter():
             return 1
         else:
             print("Character doesn't exist!")
-
-def PrintStats():
-    Clear()
-    print("Class: ",player.Class)
-    print(player.GetHealth(),'/',player.GetMaxHealth(),' Health')
-    print(player.GetAttack(),' Attack')
-    print(player.GetDefence(),' Defence')
-    print('Press any button to continue')
-    Game.wait_for_input()
 
 def RollNextEnemy() -> Monster:
     value = random.randint(0,len(Monster.MonsterBase)-1)
@@ -469,7 +466,7 @@ def NextTurn():
         Game.wait_for_input()
     
 def Fight(Monster:Monster):
-    Clear()
+    Game.Clear()
     enemy = Monster
     enemy.SetMaxHealth()
     while True:
@@ -483,7 +480,7 @@ def Fight(Monster:Monster):
         print(enemy.Stats['Defence']," Defence\n")
         print("1.Attack\n2.inventory\n3.Show Stats\n0.Run Away")
         next_move = Game.get_input()
-        Clear()
+        Game.Clear()
         match next_move:
             case '1':
                 print("You've dealt ",CalculateDamage(player.GetAttack(),enemy.Stats['Defence']),' damage ')
@@ -500,13 +497,13 @@ def Fight(Monster:Monster):
                 print(enemy.name," dealt ",CalculateDamage(enemy.Stats['Attack'],player.GetDefence()),' damage')
                 print("Player's Health ",player.Stats['Health'],'/',player.Stats['MaxHealth'])
                 Game.wait_for_input()
-                Clear()
+                Game.Clear()
             case '2':
                 ShowInventory()
-                Clear()
+                Game.Clear()
             case '3':
-                PrintStats()
-                Clear()
+                player.PrintStats()
+                Game.Clear()
             case '0':
                 x = random.randint(0,1)
                 if x == 0:
@@ -518,9 +515,9 @@ def Fight(Monster:Monster):
                     player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
                     print(enemy.name," dealt ",CalculateDamage(enemy.Stats['Attack'],player.GetDefence()),' damage')
                     Game.wait_for_input()
-                    Clear()
+                    Game.Clear()
             case _:
-                Clear()
+                Game.Clear()
 
 def CalculateDamage(Damage:int,Defence:int):
     reduction = 1+Defence/100
@@ -533,41 +530,41 @@ def Play():
         print('1.Next Turn\n2.Shop (WIP)\n3.Inventory \n4.Equipment \n5.Show Stats \n6.Save \n0.Menu')
         match Game.get_input():
             case '1':
-                Clear()
+                Game.Clear()
                 NextTurn()
-                Clear()
+                Game.Clear()
             case '2':
-                Clear()
+                Game.Clear()
             case '3':
                 ShowInventory()
-                Clear()
+                Game.Clear()
             case '4':
                 ShowEquipment()
-                Clear()
+                Game.Clear()
             case '5':
-                PrintStats()
-                Clear()
+                player.PrintStats()
+                Game.Clear()
             case '6':
-                Clear()
+                Game.Clear()
                 print('Name a save file')
                 Save(input())
-                Clear()
+                Game.Clear()
             case '0':
                 while True:
-                    Clear()
+                    Game.Clear()
                     print("Do you want to save before quiting? Yes/No")
                     match input().lower():
                         case 'yes' | 'y':
-                            Clear()
+                            Game.Clear()
                             print('Name a save file')
                             Save(input())
-                            Clear()
+                            Game.Clear()
                             player.ResetStats()
                             return 0
                         case 'no' | 'n':
                             return 0
             case _:
-                Clear()
+                Game.Clear()
 
 def GameNamePrint():
     print('____ ___  ____    ____ ____ _  _ ____ ',
@@ -577,7 +574,7 @@ def GameNamePrint():
           '',sep="\n")
 
 def Menu():
-    Clear()
+    Game.Clear()
     Debug()
     GameNamePrint()
     print("1.Play\n2.Load\n3.Your Saves\n4.Development Info\n0.Exit")
@@ -586,21 +583,21 @@ def Menu():
             sys.exit()
         case '1':
             if ChooseCharacter() != 0:
-                Clear()
+                Game.Clear()
                 Play()
         case '2':
-            Clear()
+            Game.Clear()
             print('Type the name of a save file')
             if not Load(input()) == 0:
                 Play()
         case '3':
-            Clear()
+            Game.Clear()
             SavesMenu()
         case '4':
-            Clear()
+            Game.Clear()
             DeveloperInfoMenu()
         case _:
-            Clear()
+            Game.Clear()
 
 def SavesMenu():
     saves = []
@@ -609,7 +606,7 @@ def SavesMenu():
         if filename.endswith(".json"): 
             saves.append(file)
     while True:
-        Clear()
+        Game.Clear()
         print("Found %s save files" %len(saves))
         for x in saves:
             print(x.split(".")[0])
@@ -624,7 +621,7 @@ def SavesMenu():
                     return
         
 def Save(SaveName:str):
-    Clear()
+    Game.Clear()
     items = []
     equiped = player.Equiped
     for x in player.Inventory:
@@ -650,7 +647,7 @@ def Save(SaveName:str):
         json.dump(Save, write_file)
 
 def Load(SaveName:str):
-    Clear()
+    Game.Clear()
     try:
         with open(SaveFilePath+"/"+SaveName+".json", "r") as read_file:
             data = json.load(read_file)
@@ -678,21 +675,23 @@ def Debug():
 
 def DeveloperInfoMenu():
     while True:
-        Clear()
-        print("Development info\n\nGame Roadmap:\n1.Add shops and currency")
-        print("2.Balance current gameplay\n3.Add more Items and Monsters")
-        print("4.Add Leveling system and exp gathering from fights")
-        print("5.Expand loot tables and refactor it's code\n")
-        print("currently I'm cleaning up some nasty code\n")
-        print('Press any button to continue')
+        Game.Clear()
+        print("Development info\n",
+            "Game Roadmap:",
+            "1.Add shops and currency",
+            "2.Balance current gameplay",
+            "3.Add more Items and Monsters",
+            "4.Add Leveling system and exp gathering from fights",
+            "5.Expand loot tables and refactor it's code\n",
+            "Now i'm adding shops",
+            'Press any button to continue',sep="\n")
         Game.wait_for_input()
         return
 
 
 
 if __name__ == '__main__':
-    os.system('mode con: cols=55 lines=15')
-    os.system("title " + "Rpg Game")
+    Game.window("Rpg Game",55,15)
     while True:
         Menu()
 
