@@ -394,9 +394,9 @@ def Fight(Monster:Monster):
         Clear()
         match next_move:
             case '1':
-                print('You dealt ',CalculateDamage(player.GetAttack(),enemy.Stats['Defence']),' damage ')
-                print(enemy.name," Health ",enemy.Stats['Health'],'/',enemy.Stats['MaxHealth'])
+                print("You've dealt ",CalculateDamage(player.GetAttack(),enemy.Stats['Defence']),' damage ')
                 enemy.Stats['Health'] -= CalculateDamage(player.GetAttack(),enemy.Stats['Defence'])
+                print(enemy.name," Health ",enemy.Stats['Health'],'/',enemy.Stats['MaxHealth'])
                 if enemy.Stats['Health'] <= 0:
                     print("You've killed ",enemy.name)
                     dropped = enemy.LootTable.Roll()
