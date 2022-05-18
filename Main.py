@@ -22,7 +22,7 @@ class Player:
         }
         self.Inventory = []
         self.Potions = {
-            'HealthPotion' : 0
+            'HealthPotion' : 5
         }
         self.Equiped = {
             'Helmet' : None,
@@ -58,6 +58,7 @@ class Player:
         Game.wait_for_input()
 
     def UsePotion(self,Name:str):
+        self.PotionHealProcent = 0.25
         match Name:
             case 'HealthPotion':
                 if self.Potions[Name] <= 0:
@@ -65,8 +66,14 @@ class Player:
                     Game.wait_for_input()
                     return
                 self.Potions[Name] -= 1
-                player.SetHealth(player.GetHealth() + 10)
+                HealthBefore = round(player.GetHealth())
+                Heal = round(player.GetMaxHealth() * self.PotionHealProcent)
+                player.SetHealth(player.GetHealth() + Heal)
+                HealthAfter = round(player.GetHealth())
+                HealValue = HealthAfter - HealthBefore
                 print("You've used a Health Potion")
+                print("It healed you for %s" %HealValue)
+                print("Current health %s/%s" %(round(player.GetHealth()),player.GetMaxHealth()))
                 Game.wait_for_input()
     
     def SetAllStats(self,NewStats,Class):
@@ -76,7 +83,7 @@ class Player:
     def ResetStats(self):
         self.Class = None
         self.Inventory.clear()
-        self.Potions['HealthPotion'] = 0
+        self.Potions['HealthPotion'] = 5
         self.Equiped = {
             'Helmet' : None,
             'Chestplate' : None,
@@ -191,15 +198,28 @@ class Item:
 
     ItemBase = []
 
-    def __init__(self,Name:str,Damage:int,Defence:int,MaxHealth:int,EquipPlace:str):
+    def __init__(self,Name:str,Price:int,Damage:int,Defence:int,MaxHealth:int,EquipPlace:str,ClassUse=[]):
         self.name = Name
+        self.Price = Price
         self.Damage = Damage
         self.Defence = Defence
         self.MaxHealth = MaxHealth
         self.EquipPlace = EquipPlace
+        # if 'ClassUse' is empty that means every class can use that item
+        self.ClassUse = ClassUse
         Item.ItemBase.append(self)
     
     def Use(self):
+        if len(self.ClassUse) != 0:
+            ClassesToCheck = len(self.ClassUse)
+            for Class in self.ClassUse:
+                if Class.Name == player.Class:
+                    break
+                ClassesToCheck -= 1
+                if ClassesToCheck == 0:
+                    print("%s is not for your class : %s" % (self.name, player.Class))
+                    Game.wait_for_input()
+                    return
         if player.Equiped[self.EquipPlace] == None:
             player.Equiped[self.EquipPlace] = self.name
             player.Inventory.remove(self)
@@ -241,9 +261,9 @@ class Monster:
 #=========Instances=========
 player = Player()
 #----Classes---
-WarriorClass = CharacterClass('Worrior',70,30,50)
-RangerClass = CharacterClass('Ranger',100,25,40)
-MageClass = CharacterClass('Mage',50,40,10)
+WarriorClass = CharacterClass('Worrior',70,30,20)
+RangerClass = CharacterClass('Ranger',100,25,10)
+MageClass = CharacterClass('Mage',50,40,5)
 GodClass = CharacterClass('God',1000,1000,1000)
 #----Items-----
 
@@ -253,36 +273,70 @@ Leggins = 'Leggins'
 LeftHand = 'LeftHand'
 RightHand = 'RightHand'
 
-#---Helmet---
-LeatherHelmet = Item('Leather Helmet',0,5,0,Helmet)
-#---Chestplate---
-Chainmail = Item('Chainmail',0,10,5,Chestplate)
-IronChestplate = Item('Iron Chestplate',0,30,10,Chestplate)
-#---Leggins---
-IronLeggins = Item('Iron Leggins',0,10,0,Leggins)
-#---LeftHand---
-WoodenShield = Item('Wooden Shield',-5,10,0,LeftHand)
-#---RightHand---
-WoodenSword = Item('Wooden Sword',5,0,0,RightHand)
-IronSword = Item('Iron Sword',20,0,0,RightHand)
+#---Leather---
+LeatherHelmet = Item('Leather Helmet',10,0,5,0,Helmet)
+LeatherChestplate = Item('Leather Chestplate',10,0,7,5,Chestplate)
+LeatherLeggins = Item('Leather Leggins',10,0,5,0,Leggins)
+LeatherGloves = Item('Leather Gloves',10,0,5,0,LeftHand)
+#---Iron---
+IronHelmet = Item('Iron Helmet',10,0,5,5,Helmet,[WarriorClass])
+IronChestplate = Item('Iron Chestplate',10,0,30,10,Chestplate,[WarriorClass])
+IronLeggins = Item('Iron Leggins',10,0,10,0,Leggins,[WarriorClass])
+IronShield = Item('Iron Shield',10,-10,20,0,LeftHand,[WarriorClass])
+IronSword = Item('Iron Sword',10,10,0,0,RightHand,[WarriorClass])
+IronDagger = Item('Iron Dagger',10,7,0,0,RightHand,[RangerClass,MageClass])
+#---Wooden---
+WoodenShield = Item('Wooden Shield',10,-5,10,0,LeftHand,[WarriorClass])
+WoodenSword = Item('Wooden Sword',10,5,0,0,RightHand,[WarriorClass])
+WoodenBow = Item('Wooden Bow',10,10,0,0,RightHand,[RangerClass])
+#---Magic---
+BegginersWand = Item('Begginers Wand',10,10,0,0,RightHand,[MageClass])
+StudentCape = Item('Student Cape',10,5,5,5,Chestplate,[MageClass])
+WizzardHat = Item('Wizzard Hat',10,5,5,0,Helmet,[MageClass])
+MagicTome = Item('Magic Tome',10,10,0,0,LeftHand,[MageClass])
+MagicOrb = Item('Magic Orb',10,20,0,0,LeftHand,[MageClass])
+#---Other---
+Chainmail = Item('Chainmail',10,0,10,5,Chestplate,[RangerClass,WarriorClass])
 
 #----Zombie----
 ZombieLoot = LootTable()
-ZombieLoot.addLoot(WoodenSword,8)
-ZombieLoot.addLoot(WoodenShield,5)
-ZombieLoot.addLoot(IronSword,2)
-ZombieLoot.addLoot(None,50)
-Zombie = Monster('Zombie',40,10,20,ZombieLoot)
+ZombieLoot.addLoot(WoodenSword,10)
+ZombieLoot.addLoot(WoodenShield,9)
+ZombieLoot.addLoot(IronSword,4)
+ZombieLoot.addLoot(IronDagger,7)
+ZombieLoot.addLoot(IronShield,4)
+ZombieLoot.addLoot(Chainmail,8)
+ZombieLoot.addLoot(None,100)
+Zombie = Monster('Zombie',60,15,20,ZombieLoot)
+#----Warewolf----
+WarewolfLoot = LootTable()
+WarewolfLoot.addLoot(IronChestplate,5)
+WarewolfLoot.addLoot(IronLeggins,7)
+WarewolfLoot.addLoot(WoodenBow,10)
+WarewolfLoot.addLoot(BegginersWand,10)
+WarewolfLoot.addLoot(IronDagger,10)
+WarewolfLoot.addLoot(IronSword,7)
+WarewolfLoot.addLoot(None,100)
+Warewolf = Monster("Warewolf",70,20,30,WarewolfLoot)
 #----Skeleton----
 SkeletonLoot = LootTable()
-SkeletonLoot.addLoot(Chainmail,5)
-SkeletonLoot.addLoot(LeatherHelmet,10)
+SkeletonLoot.addLoot(Chainmail,10)
+SkeletonLoot.addLoot(LeatherHelmet,9)
+SkeletonLoot.addLoot(LeatherLeggins,5)
+SkeletonLoot.addLoot(LeatherGloves,7)
+SkeletonLoot.addLoot(LeatherChestplate,4)
+SkeletonLoot.addLoot(WoodenBow,8)
 SkeletonLoot.addLoot(None,100)
-Skeleton = Monster('Skeleton',25,20,10,SkeletonLoot)
+Skeleton = Monster('Skeleton',45,10,10,SkeletonLoot)
 #-----Ghost-----
 GhostLoot = LootTable()
+GhostLoot.addLoot(BegginersWand,9)
+GhostLoot.addLoot(WizzardHat,11)
+GhostLoot.addLoot(StudentCape,10)
+GhostLoot.addLoot(MagicTome,8)
+GhostLoot.addLoot(MagicOrb,5)
 GhostLoot.addLoot(None,100)
-Ghost = Monster('Ghost',10,1,500,GhostLoot)
+Ghost = Monster('Ghost',25,5,500,GhostLoot)
 
 
 #===========================
@@ -357,16 +411,17 @@ def RollNextEnemy() -> Monster:
 
 def NextTurn():
     rng = random.randint(0,100)
-    if rng in range(0,1):
+    if rng in range(0,30):
         print('Lucky you! Nothing happend')
         Game.wait_for_input()
-    elif rng in range(2,50):
+    elif rng in range(31,50):
         print('You found a place to rest')
         ProcentHealthRested = random.randint(5,25)/100
-        HpRested = player.GetMaxHealth() * ProcentHealthRested
+        HpRested = round(player.GetMaxHealth() * ProcentHealthRested)
         player.SetHealth(player.GetHealth()+HpRested)
-        print("And recoverd ",HpRested," Health")
-        print("Current Health ",player.GetHealth(),"/",player.GetMaxHealth())
+        print("And recoverd %s Health" % HpRested)
+        print("Current Health %s/%s" %(round(player.GetHealth()),player.GetMaxHealth()))
+
         Game.wait_for_input()
     elif rng in range(51,80):
         RandomEnemy = RollNextEnemy()
