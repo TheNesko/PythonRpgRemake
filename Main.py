@@ -330,15 +330,15 @@ def ChooseCharacter():
     while True:
         print('Choose your character!')
         for x in range(len(CharacterClass.Classes)):
-            print(x,".",CharacterClass.Classes[x].Name,sep="")
+            print(x+1,".",CharacterClass.Classes[x].Name,sep="")
         print("0.Menu")
         character = int(Game.get_input())
         Clear()
-        if character in range(len(CharacterClass.Classes)):
-            player.SetAllStats(CharacterClass.Classes[character].Stats , CharacterClass.Classes[character].Name)
-            break
-        elif character == 0:
+        if character == 0:
             return 0
+        elif character in range(len(CharacterClass.Classes)+1):
+            player.SetAllStats(CharacterClass.Classes[character-1].Stats , CharacterClass.Classes[character-1].Name)
+            return 1
         else:
             print("Character doesn't exist!")
 
@@ -357,8 +357,16 @@ def RollNextEnemy() -> Monster:
 
 def NextTurn():
     rng = random.randint(0,100)
-    if rng in range(0,50):
-        print('Lucky u nothing happend')
+    if rng in range(0,1):
+        print('Lucky you! Nothing happend')
+        Game.wait_for_input()
+    elif rng in range(2,50):
+        print('You found a place to rest')
+        ProcentHealthRested = random.randint(5,25)/100
+        HpRested = player.GetMaxHealth() * ProcentHealthRested
+        player.SetHealth(player.GetHealth()+HpRested)
+        print("And recoverd ",HpRested," Health")
+        print("Current Health ",player.GetHealth(),"/",player.GetMaxHealth())
         Game.wait_for_input()
     elif rng in range(51,80):
         RandomEnemy = RollNextEnemy()
@@ -491,9 +499,9 @@ def Menu():
         case '0':
             sys.exit()
         case '1':
-            if ChooseCharacter() == 0: return 0
-            Clear()
-            Play()
+            if ChooseCharacter() != 0:
+                Clear()
+                Play()
         case '2':
             Clear()
             print('Type the name of a save file')
@@ -602,14 +610,6 @@ if __name__ == '__main__':
 
 
 '''
----------------------------------------------
-IMPORTANTE YES!
-separate the code to thir own files
-basicly own class gets it's own file or smth idk
-ex. Monster class is in Monsters.py file and contains
-Monster data base with every monster for eazy acces
-same with Items and add some utils like 
-Get_Input() insted of int(msvcrt.getch())
 ---------------------------------------------
 Ideas:
 1. Evade chance (not to get damaged for monsters and classes)
