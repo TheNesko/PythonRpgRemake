@@ -619,21 +619,38 @@ def GameNamePrint(Style:str = "red"):
     return text
 
 def Menu():
-    Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
-    Engine.layout['Main'].update(Engine.Panel(Engine.Text("1.Play\n2.Load\n3.Development Info\n0.Exit"),title="Menu"))
-    match Game.get_input():
-        case '0':
-            sys.exit()
-        case '1':
-            if ChooseCharacter():
-                CurrentSaveFileName = f'AutoSave-{player.Class}{date.today()}'
-                Play()
-        case '2':
-            if SavesMenu():
-                Play()
-        case '3':
-            Engine.layout['Side'].update(Engine.Panel(DeveloperInfoMenu()))
-            Game.wait_for_input()
+    options = ['1.Play','2.Load','3.Development Info','0.Exit']
+    TargetOption = 0
+    ExitIndex = len(options)-1
+    while True:
+        MainText = Engine.Text("")
+        Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
+        for index, name in enumerate(options):
+            if TargetOption == index: MainText.append("> %s \n" %name , style="u")
+            else: MainText.append("%s \n" %name)
+
+        Engine.layout['Main'].update(Engine.Panel(MainText,title="Menu"))
+        match Game.get_input():
+            case 'w':
+                TargetOption -= 1
+                if TargetOption < 0: TargetOption = ExitIndex
+            case 's':
+                TargetOption += 1
+                if TargetOption > ExitIndex: TargetOption = 0
+            case '\r' | ' ':
+                match TargetOption:
+                    case 0:
+                        if ChooseCharacter():
+                            CurrentSaveFileName = f'AutoSave-{player.Class}{date.today()}'
+                            Play()
+                    case 1:
+                        if SavesMenu():
+                            Play()
+                    case 2:
+                        Engine.layout['Side'].update(Engine.Panel(DeveloperInfoMenu()))
+                        Game.wait_for_input()
+                    case ExitIndex:
+                        sys.exit()
     return
 
 def SavesMenu():
@@ -750,8 +767,7 @@ def DeveloperInfoMenu():
 
 if __name__ == '__main__':
     with Engine.Live(Engine.layout,screen=True) as live:
-        while True:
-            Menu()
+        Menu()
 
 
 '''
