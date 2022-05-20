@@ -1,8 +1,21 @@
 import time, sys, os, random, json
+from turtle import title
 from rich import print as rprint
-import rich, window
+import rich , Engine
 from datetime import date
 from Engine import Game
+
+Game.disable_quickedit()
+Game.window('Game',50,40)
+
+Engine.layout = Engine.Layout()
+Engine.console = Engine.Console()
+
+Engine.layout.split_column(
+    Engine.Layout(name='Main',ratio=1),
+    Engine.Layout(name='Side',ratio=2)
+)
+
 
 #---------
 GameVersion= "0.0.3"
@@ -101,15 +114,15 @@ class Player:
             'LeftHand' : None,
             'RightHand' : None
         }
+        self.ResetStatsFromEquipment()
     
     def PrintStats(self):
-        Game.Clear()
-        rprint("Class: [blue]%s[/blue]" %self.Class)
-        rprint("[green]%s[/green]/[red]%s[/red] Health" %(self.GetHealth(),self.GetMaxHealth()))
-        rprint('[red]%s[/red] Attack' %self.GetAttack())
-        rprint('[red]%s[/red] Defence' %self.GetDefence(),)
-        rprint('Press [blue]any[/blue] button to continue')
-        Game.wait_for_input()
+        text = Engine.Text()
+        text.append("Class: %s" %self.Class)
+        text.append("%s/%s Health" %(self.GetHealth(),self.GetMaxHealth()))
+        text.append('%s Attack' %self.GetAttack())
+        text.append('%s Defence' %self.GetDefence(),)
+        return text
     
     def AddStatsFromEquipment(self):
         for equipment in self.Equiped:
@@ -133,8 +146,6 @@ class Player:
     @staticmethod
     def Die():
         player.ResetStats()
-        player.RemoveEquipment()
-        player.ResetStatsFromEquipment()
 
     def GetHealth(self):
         return self.Stats['Health']
@@ -421,25 +432,35 @@ def ShowEquipment():
                 player.RemoveEquipment(x)
 
 def ChooseCharacter():
-    window.layout['Side'].update(window.Panel(window.Text("Choose your character!")))
+    Engine.layout['Side'].update(Engine.Panel(Engine.Text("Choose your character!")))
+    TargetCharacter = 0
+    ExitIndex = len(CharacterClass.Classes)
     while True: 
-        text = window.Text("")
+        text = Engine.Text("")
         for index , _ in enumerate(CharacterClass.Classes):
-            text.append(f"{index+1}.{CharacterClass.Classes[index].Name}\n")
-        text.append("0.Menu")
-        window.layout['Main'].update(window.Panel(text,title="Character Select"))
-        character = int(Game.get_input())
-        Game.Clear()
-        if character == 0:
-            return 0
-        elif character in range(len(CharacterClass.Classes)+1):
-            player.SetAllStats(CharacterClass.Classes[character-1].Stats , CharacterClass.Classes[character-1].Name)
-            window.layout['Side'].update(window.Panel(window.Text(f"You've choosen {CharacterClass.Classes[character-1].Name}",style="green")))
-            time.sleep(1)
-            return 1
-        else:
-            window.layout['Side'].update(window.Panel(window.Text("Character doesn't exist!",style="red")))
-    return
+            if TargetCharacter == index: text.append(f"> {CharacterClass.Classes[index].Name}\n",style="u")
+            else: text.append(f"{CharacterClass.Classes[index].Name}\n")
+        if TargetCharacter == ExitIndex: text.append("> Go to menu",style="u")
+        else: text.append("Go to menu")
+
+        Engine.layout['Main'].update(Engine.Panel(text,title="Character Select"))
+        match Game.get_input():
+            case 'w':
+                TargetCharacter -= 1
+                if TargetCharacter < 0: TargetCharacter = ExitIndex
+            case 's':
+                TargetCharacter += 1
+                if TargetCharacter > ExitIndex: TargetCharacter = 0
+            case '\r' | ' ':
+                if TargetCharacter == ExitIndex: return False
+
+                if TargetCharacter in range(len(CharacterClass.Classes)+1):
+                    player.SetAllStats(CharacterClass.Classes[TargetCharacter].Stats , CharacterClass.Classes[TargetCharacter].Name)
+                    Engine.layout['Side'].update(Engine.Panel(Engine.Text(f"You've choosen {CharacterClass.Classes[TargetCharacter].Name}",style="green")))
+                    time.sleep(1)
+                    return True
+                else:
+                    Engine.layout['Side'].update(Engine.Panel(Engine.Text("Character doesn't exist!",style="red")))
 
 def RollNextEnemy() -> Monster:
     value = random.randint(0,len(Monster.MonsterBase)-1)
@@ -535,64 +556,83 @@ def CalculateDamage(Damage:int,Defence:int):
     return int(result)
 
 def Play():
-    window.layout['Side'].update(window.Panel(GameNamePrint()))
+    Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
+    TargetOption = 0
+    Options = ['Next Turn','Shop (WIP)','Inventory','Equipment','Show Stats','Go to menu']
+    ExitIndex = len(Options)-1
     while True:
         if player.GetHealth() <= 0: 
             player.Die()
             return 0
-        window.layout['Main'].update(window.Panel(window.Text('1.Next Turn\n2.Shop (WIP)\n3.Inventory\n4.Equipment\n5.Show Stats\n6.Save\n0.Menu'),title="Game"))
+        MainText = Engine.Text("")
+        for index , name in enumerate(Options):
+            if index == TargetOption: MainText.append("> %s \n" %name)
+            else: MainText.append("%s \n" %name)
+
+        Engine.layout['Main'].update(Engine.Panel(MainText,title="Game"))
         match Game.get_input():
-            case '1':
-                NextTurn()
-            case '2':
-                pass
-            case '3':
-                ShowInventory()
-            case '4':
-                ShowEquipment()
-            case '5':
-                player.PrintStats()
-            case '6':
-                AutoSave()
-                window.layout['Side'].update(window.Panel(window.Text("Type a save file name",justify='center')))
-                Save(input())
-            case '0':
-                while True:
-                    Game.Clear()
-                    window.layout['Side'].update(window.Panel(window.Text("Do you want to save before quiting? Yes/No",justify='center')))
-                    match input().lower():
-                        case 'yes' | 'y':
-                            window.layout['Side'].update(window.Panel(window.Text("Type a save file name",justify='center')))
-                            Save(input())
-                            player.ResetStats()
-                            return 0
-                        case 'no' | 'n' | '0':
-                            return 0
-            case _:
-                Game.Clear()
+            case 'w':
+                TargetOption -= 1
+                if TargetOption < 0: TargetOption = ExitIndex
+            case 's':
+                TargetOption += 1
+                if TargetOption > ExitIndex: TargetOption = 0
+            case '\r' | ' ':
+                match TargetOption:
+                    case 0:
+                        NextTurn()
+                    case 1:
+                        pass
+                    case 2:
+                        ShowInventory()
+                    case 3:
+                        ShowEquipment()
+                    case 4:
+                        Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
+                    case 5:
+                        while True:
+                            Game.Clear()
+                            Engine.layout['Side'].update(Engine.Panel(Engine.Text("Do you want to save before quiting? Yes/No",justify='center')))
+                            match Game.get_input():
+                                case 'y':
+                                    Engine.layout['Side'].update(Engine.Panel(Engine.Text("Type a save file name",justify='center')))
+                                    SaveFileName = Engine.Text("")
+                                    while True:
+                                        userInput = Game.get_input()
+                                        if userInput == '\r' and SaveFileName != "": break
+                                        SaveFileName = Engine.Text(Game.TextBoxInput(SaveFileName,userInput))
+                                        HelpText = Engine.Text("Type a save file name\n")
+                                        Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(HelpText,SaveFileName)))
+                                    Save(str(SaveFileName))
+                                    player.Die()
+                                    return 0
+                                case 'n':
+                                    return 0
+                                case _:
+                                    break
 
 def GameNamePrint(Style:str = "red"):
-    text = window.Text("",justify="center")
+    text = Engine.Text("",justify="center")
     text.append('____ ___  ____    ____ ____ _  _ ____ \n',style=f'{Style}')
     text.append('|__/ |__] | __    | __ |__| |\/| |___ \n',style=f'{Style}')
     text.append('|  \ |    |__]    |__] |  | |  | |___ \n',style=f'{Style}')
     return text
 
 def Menu():
-    window.layout['Side'].update(window.Panel(GameNamePrint()))
-    window.layout['Main'].update(window.Panel(window.Text("1.Play\n2.Load\n3.Development Info\n0.Exit"),title="Menu"))
+    Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
+    Engine.layout['Main'].update(Engine.Panel(Engine.Text("1.Play\n2.Load\n3.Development Info\n0.Exit"),title="Menu"))
     match Game.get_input():
         case '0':
             sys.exit()
         case '1':
-            if ChooseCharacter() != 0:
+            if ChooseCharacter():
                 CurrentSaveFileName = f'AutoSave-{player.Class}{date.today()}'
                 Play()
         case '2':
             if SavesMenu():
                 Play()
         case '3':
-            window.layout['Side'].update(window.Panel(DeveloperInfoMenu()))
+            Engine.layout['Side'].update(Engine.Panel(DeveloperInfoMenu()))
             Game.wait_for_input()
     return
 
@@ -605,22 +645,27 @@ def SavesMenu():
     Target = 0
     ExitIndex = len(saves)
     while True:
-        MainText = window.Text("")
-        SideText = window.Text("")
-        MainText.append("Found %s save files" %len(saves))
+        MainText = Engine.Text("")
+        SideText = Engine.Text("")
+        MainText.append("Found %s save files" %len(saves)).stylize("bright_black",6,8)
         for index , name in enumerate(saves):
-            SideText.append('> %s \n' % name.split(".")[0] if index == Target else '%s \n' % name.split(".")[0])
-        MainText.append('\nType the name of a save file to load')
-        SideText.append('> Go to menu' if Target == ExitIndex else 'Go to menu')
+            if index == Target: SideText.append('> %s \n' % name.split(".")[0] ,style="u light_cyan1")
+            else: SideText.append('%s \n' % name.split(".")[0])
+            
+        MainText.append('\nChoose a save file you want to load')
+        if ExitIndex == Target: SideText.append('> Go to menu',style="u honeydew2")
+        else: SideText.append('Go to menu')
 
-        window.layout['Main'].update(window.Panel(MainText))
-        window.layout['Side'].update(window.Panel(SideText))
+        Engine.layout['Main'].update(Engine.Panel(MainText))
+        Engine.layout['Side'].update(Engine.Panel(SideText))
         match Game.get_input():
             case 'w':
-                Target -= 1 if Target >= 1 else ExitIndex
+                Target -= 1
+                if Target < 0: Target = ExitIndex
             case 's':
-                Target += 1 if Target <= ExitIndex else 1
-            case '\r':
+                Target += 1
+                if Target > ExitIndex: Target = 0
+            case '\r' | ' ':
                 if Target == ExitIndex: return False
                 if Load(saves[Target]) == 0: return False
     return True
@@ -663,11 +708,11 @@ def Load(SaveName:str):
         with open(SaveFilePath+"/"+SaveName+".json", "r") as read_file:
             data = json.load(read_file)
     except:
-        window.layout['Side'].update(window.Panel(window.Text("Can't load this save file!",style="red")))
+        Engine.layout['Side'].update(Engine.Panel(Engine.Text("Can't load this save file!",style="red")))
         time.sleep(2)
         return 0
     if data['GameVersion'] != GameVersion:
-        window.layout['Side'].update(window.Panel(window.Text("Save game version is diffrent form curent version\nLoad? Y/N")))
+        Engine.layout['Side'].update(Engine.Panel(Engine.Text("Save game version is diffrent form curent version\nLoad? Y/N")))
         answer = input().lower()
         if answer == "n": return 0
     
@@ -686,23 +731,25 @@ def Debug():
 
 
 def DeveloperInfoMenu():
-    text = window.Text("")
+    text = Engine.Text("")
     text.append("Development info\n\n",style="cyan")
-    text.append("Game Roadmap:\n")
+    text.append("Game Roadmap:\n",style="deep_sky_blue4")
     text.append("1.Add shops and currency\n")
     text.append("2.Balance current gameplay\n")
     text.append("3.Add more Items and Monsters\n")
     text.append("4.Add Leveling system and exp gathering from fights\n")
-    text.append("5.Expand loot tables and refactor it's code\n")
-    text.append("Now i'm adding shops\n")
-    text.append('Press any button to continue',style="bright_black")
+    text.append("5.Expand loot tables and refactor it's code\n\n")
+    text.append("Change Log:\n",style="spring_green4")
+    text.append("Added auto save\n")
+    text.append("fixed some crashes\n")
+    text.append("Currently reworking GUI\n")
+    text.append('Press any button to continue',style="blink bright_black")
     return text
 
 
 
 if __name__ == '__main__':
-    #Game.window("Rpg Game",55,15)
-    with window.Live(window.layout,screen=True) as live:
+    with Engine.Live(Engine.layout,screen=True) as live:
         while True:
             Menu()
 

@@ -1,10 +1,26 @@
 import msvcrt, os
+from pygame import time
+from rich.text import Text
+from rich.live import Live
+from rich.table import Table
+from rich.screen import Screen
+from rich.layout import Layout
+from rich.panel import Panel
+from rich.console import Console
+from rich.console import Group
+from rich import print
 
 class Game:
     @staticmethod
+    def TextBoxInput(text:str,char:str):
+        if char == "\x08":
+            string = str(text)
+            return string[:-1]
+        return str(text + char)
+
+    @staticmethod
     def get_input():
         answer = msvcrt.getwch()
-        print(answer)
         return answer
 
     @staticmethod
