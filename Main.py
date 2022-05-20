@@ -1,5 +1,4 @@
 import time, sys, os, random, json
-from turtle import title
 from rich import print as rprint
 import rich , Engine
 from datetime import date
@@ -67,17 +66,15 @@ class Player:
                 x.Sell()
                 break
     
-    def RemoveEquipment(self,ItemName):
-        item = Item.FindItem(ItemName)
-        if item == None: return
-
+    def RemoveEquipment(self,EquipedItem):
+        item = Item.FindItem(EquipedItem)
+        if item == None: return Engine.Text("You have nothing equiped!")
         if player.Equiped[item.EquipPlace] != None:
             player.Equiped[item.EquipPlace] = None
             player.Inventory.append(item)
-            rprint("You've taken off a [blue]%s[/blue]" % item.name)
+            return Engine.Text("You've taken off a %s" % item.name).stylize("aquamarine3",19)
         else:
-            print("You don't have that item equiped")
-        Game.wait_for_input()
+            return Engine.Text("You don't have that item equiped")
 
     def UsePotion(self,Name:str):
         self.PotionHealProcent = 0.25
@@ -118,10 +115,10 @@ class Player:
     
     def PrintStats(self):
         text = Engine.Text()
-        text.append("Class: %s" %self.Class)
-        text.append("%s/%s Health" %(self.GetHealth(),self.GetMaxHealth()))
-        text.append('%s Attack' %self.GetAttack())
-        text.append('%s Defence' %self.GetDefence(),)
+        text.append("Class: %s \n" %self.Class)
+        text.append("%s/%s Health \n" %(self.GetHealth(),self.GetMaxHealth()))
+        text.append('%s Attack \n' %self.GetAttack())
+        text.append('%s Defence \n' %self.GetDefence(),)
         return text
     
     def AddStatsFromEquipment(self):
@@ -417,19 +414,32 @@ def ShowInventory():
                 player.UseItem(answer)
 
 def ShowEquipment():
+    TargetOption = 0
+    TargetItem = None
+    ExitIndex = len(player.Equiped)
     while True:
-        Game.Clear()
-        rprint("[blue]Equipment[/blue]")
-        for x in player.Equiped:
-            print(x,"-",player.Equiped[x])
-        rprint("\nType the name of and item you want to use\n0.Go back")
-        x = input()
-        Game.Clear()
-        match x:
-            case '0':
-                return 0
-            case _:
-                player.RemoveEquipment(x)
+        EquipmentText = Engine.Text("")
+        for index , name in enumerate(player.Equiped):
+            Item = player.Equiped[name]
+            if TargetOption == index:
+                EquipmentText.append("> %s - %s \n" %(name,Item),style="u")
+                TargetItem = name
+            else: EquipmentText.append("%s - %s \n" %(name,Item))
+        if TargetOption == ExitIndex: EquipmentText.append("> Go back", style="u")
+        else: EquipmentText.append("Go back")
+        Engine.layout['Side'].update(Engine.Panel(EquipmentText,title="Equipement"))
+        match Game.get_input():
+            case 'w':
+                TargetOption -= 1
+                if TargetOption < 0: TargetOption = ExitIndex
+            case 's':
+                TargetOption += 1
+                if TargetOption > ExitIndex: TargetOption = 0
+            case '\r' | ' ':
+                if TargetOption == ExitIndex: return
+                if TargetItem != None:
+                    Engine.layout['Side'].update(Engine.Panel(player.RemoveEquipment(TargetItem),title="Equipement"))
+                    time.sleep(1)
 
 def ChooseCharacter():
     Engine.layout['Side'].update(Engine.Panel(Engine.Text("Choose your character!")))
@@ -587,6 +597,7 @@ def Play():
                         ShowInventory()
                     case 3:
                         ShowEquipment()
+                        Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
                     case 4:
                         Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
                     case 5:
@@ -644,7 +655,7 @@ def Menu():
                             CurrentSaveFileName = f'AutoSave-{player.Class}{date.today()}'
                             Play()
                     case 1:
-                        if SavesMenu():
+                        if SavesMenu() == True:
                             Play()
                     case 2:
                         Engine.layout['Side'].update(Engine.Panel(DeveloperInfoMenu()))
@@ -684,8 +695,8 @@ def SavesMenu():
                 if Target > ExitIndex: Target = 0
             case '\r' | ' ':
                 if Target == ExitIndex: return False
-                if Load(saves[Target]) == 0: return False
-    return True
+                if Load(str(saves[Target])) == 0: return False
+                return True
 
         
 def AutoSave():
@@ -722,7 +733,7 @@ def Load(SaveName:str):
     CurrentSaveFileName = SaveName
     Game.Clear()
     try:
-        with open(SaveFilePath+"/"+SaveName+".json", "r") as read_file:
+        with open(SaveFilePath+"/"+SaveName, "r") as read_file:
             data = json.load(read_file)
     except:
         Engine.layout['Side'].update(Engine.Panel(Engine.Text("Can't load this save file!",style="red")))
@@ -730,18 +741,19 @@ def Load(SaveName:str):
         return 0
     if data['GameVersion'] != GameVersion:
         Engine.layout['Side'].update(Engine.Panel(Engine.Text("Save game version is diffrent form curent version\nLoad? Y/N")))
-        answer = input().lower()
-        if answer == "n": return 0
-    
-    player.SetAllStats(data['Player'],data['PlayerClass'])
-    player.Gold = data['Inventory']['Gold']
-    player.Potions = data['Inventory']['Potions']
-    player.Equiped = data['Inventory']['Equiped']
-    for x in data['Inventory']['Items']:
-        for y in Item.ItemBase:
-            if x == y.name:
-                player.Inventory.append(y)
-    return 1
+        match Game.get_input():
+            case 'n':
+                return 0
+            case 'y':
+                player.SetAllStats(data['Player'],data['PlayerClass'])
+                player.Gold = data['Inventory']['Gold']
+                player.Potions = data['Inventory']['Potions']
+                player.Equiped = data['Inventory']['Equiped']
+                for x in data['Inventory']['Items']:
+                    for y in Item.ItemBase:
+                        if x == y.name:
+                            player.Inventory.append(y)
+                return 1
 
 def Debug():
     pass
