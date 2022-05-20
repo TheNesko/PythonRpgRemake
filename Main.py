@@ -1,5 +1,7 @@
 import time, sys, os, random, json
 from rich import print as rprint
+import rich, window
+from datetime import date
 from Engine import Game
 
 #---------
@@ -90,7 +92,7 @@ class Player:
     def ResetStats(self):
         self.Class = None
         self.Gold = 0
-        self.Inventory.Game.Clear()
+        self.Inventory = []
         self.Potions['HealthPotion'] = 5
         self.Equiped = {
             'Helmet' : None,
@@ -127,6 +129,12 @@ class Player:
         self.EquipmentMaxHealth = 0
         self.EquipmentAttack = 0
         self.EquipmentDefence = 0
+    
+    @staticmethod
+    def Die():
+        player.ResetStats()
+        player.RemoveEquipment()
+        player.ResetStatsFromEquipment()
 
     def GetHealth(self):
         return self.Stats['Health']
@@ -251,9 +259,9 @@ class Item:
         Game.wait_for_input()
     
     def Sell(self):
-        if range(len(player.Inventory)) <= 0: return
-        for Item in range(len(player.Inventory)):
-            if player.Inventory[Item] == self:
+        if len(player.Inventory) <= 0: return
+        for index , _ in enumerate(player.Inventory):
+            if player.Inventory[index] == self:
                 player.Gold += self.Price
                 player.Inventory.remove(self)
 
@@ -285,10 +293,10 @@ class Monster:
 #=========Instances=========
 player = Player()
 #----Classes---
-WarriorClass = CharacterClass('Worrior',70,30,20)
+WarriorClass = CharacterClass('Warrior',70,30,20)
 RangerClass = CharacterClass('Ranger',100,25,10)
 MageClass = CharacterClass('Mage',50,40,5)
-GodClass = CharacterClass('God',1000,1000,1000)
+TitanClass = CharacterClass('Titan',1000,1000,1000)
 #----Items-----
 
 Helmet = 'Helmet'
@@ -413,21 +421,25 @@ def ShowEquipment():
                 player.RemoveEquipment(x)
 
 def ChooseCharacter():
-    Game.Clear()
-    while True:
-        print('Choose your character!')
-        for x in range(len(CharacterClass.Classes)):
-            rprint(x+1,".",CharacterClass.Classes[x].Name,sep="")
-        rprint("0.Menu")
+    window.layout['Side'].update(window.Panel(window.Text("Choose your character!")))
+    while True: 
+        text = window.Text("")
+        for index , _ in enumerate(CharacterClass.Classes):
+            text.append(f"{index+1}.{CharacterClass.Classes[index].Name}\n")
+        text.append("0.Menu")
+        window.layout['Main'].update(window.Panel(text,title="Character Select"))
         character = int(Game.get_input())
         Game.Clear()
         if character == 0:
             return 0
         elif character in range(len(CharacterClass.Classes)+1):
             player.SetAllStats(CharacterClass.Classes[character-1].Stats , CharacterClass.Classes[character-1].Name)
+            window.layout['Side'].update(window.Panel(window.Text(f"You've choosen {CharacterClass.Classes[character-1].Name}",style="green")))
+            time.sleep(1)
             return 1
         else:
-            print("Character doesn't exist!")
+            window.layout['Side'].update(window.Panel(window.Text("Character doesn't exist!",style="red")))
+    return
 
 def RollNextEnemy() -> Monster:
     value = random.randint(0,len(Monster.MonsterBase)-1)
@@ -523,41 +535,35 @@ def CalculateDamage(Damage:int,Defence:int):
     return int(result)
 
 def Play():
+    window.layout['Side'].update(window.Panel(GameNamePrint()))
     while True:
-        if player.GetHealth() <= 0: return 0
-        rprint('1.Next Turn\n2.Shop (WIP)\n3.Inventory \n4.Equipment \n5.Show Stats \n6.Save \n0.Menu')
+        if player.GetHealth() <= 0: 
+            player.Die()
+            return 0
+        window.layout['Main'].update(window.Panel(window.Text('1.Next Turn\n2.Shop (WIP)\n3.Inventory\n4.Equipment\n5.Show Stats\n6.Save\n0.Menu'),title="Game"))
         match Game.get_input():
             case '1':
-                Game.Clear()
-                AutoSave()
                 NextTurn()
-                Game.Clear()
             case '2':
-                Game.Clear()
+                pass
             case '3':
                 ShowInventory()
-                Game.Clear()
             case '4':
                 ShowEquipment()
-                Game.Clear()
             case '5':
                 player.PrintStats()
-                Game.Clear()
             case '6':
-                Game.Clear()
-                print('Name a save file')
+                AutoSave()
+                window.layout['Side'].update(window.Panel(window.Text("Type a save file name",justify='center')))
                 Save(input())
-                Game.Clear()
             case '0':
                 while True:
                     Game.Clear()
-                    rprint("Do you want to save before quiting? [magenta]Yes/No[/magenta]")
+                    window.layout['Side'].update(window.Panel(window.Text("Do you want to save before quiting? Yes/No",justify='center')))
                     match input().lower():
                         case 'yes' | 'y':
-                            Game.Clear()
-                            print('Name a save file')
+                            window.layout['Side'].update(window.Panel(window.Text("Type a save file name",justify='center')))
                             Save(input())
-                            Game.Clear()
                             player.ResetStats()
                             return 0
                         case 'no' | 'n' | '0':
@@ -565,39 +571,30 @@ def Play():
             case _:
                 Game.Clear()
 
-def GameNamePrint(Color:str = "red"):
-    rprint('[%s]____ ___  ____    ____ ____ _  _ ____ [/%s]' %(Color,Color),
-          '[%s]|__/ |__] | __    | __ |__| |\/| |___ [/%s]' %(Color,Color),
-          '[%s]|  \ |    |__]    |__] |  | |  | |___ [/%s]' %(Color,Color),
-          '',
-          '',sep="\n")
+def GameNamePrint(Style:str = "red"):
+    text = window.Text("",justify="center")
+    text.append('____ ___  ____    ____ ____ _  _ ____ \n',style=f'{Style}')
+    text.append('|__/ |__] | __    | __ |__| |\/| |___ \n',style=f'{Style}')
+    text.append('|  \ |    |__]    |__] |  | |  | |___ \n',style=f'{Style}')
+    return text
 
 def Menu():
-    Game.Clear()
-    Debug()
-    GameNamePrint()
-    rprint("1.Play\n2.Load\n3.Your Saves\n4.Development Info\n0.Exit")
+    window.layout['Side'].update(window.Panel(GameNamePrint()))
+    window.layout['Main'].update(window.Panel(window.Text("1.Play\n2.Load\n3.Development Info\n0.Exit"),title="Menu"))
     match Game.get_input():
         case '0':
             sys.exit()
         case '1':
             if ChooseCharacter() != 0:
-                CurrentSaveFileName = ""
-                Game.Clear()
+                CurrentSaveFileName = f'AutoSave-{player.Class}{date.today()}'
                 Play()
         case '2':
-            Game.Clear()
-            print('Type the name of a save file')
-            if not Load(input()) == 0:
+            if SavesMenu():
                 Play()
         case '3':
-            Game.Clear()
-            SavesMenu()
-        case '4':
-            Game.Clear()
-            DeveloperInfoMenu()
-        case _:
-            Game.Clear()
+            window.layout['Side'].update(window.Panel(DeveloperInfoMenu()))
+            Game.wait_for_input()
+    return
 
 def SavesMenu():
     saves = []
@@ -605,27 +602,35 @@ def SavesMenu():
         filename = os.fsdecode(file)
         if filename.endswith(".json"): 
             saves.append(file)
+    Target = 0
+    ExitIndex = len(saves)
     while True:
-        Game.Clear()
-        print("Found %s save files" %len(saves))
-        for x in saves:
-            print(x.split(".")[0])
-        print('\nType the name of a save file to load\n0.Menu')
-        answer = input()
-        match answer:
-            case '0':
-                return
-            case _:
-                Load(answer)
-                if Play() == 0:
-                    return
+        MainText = window.Text("")
+        SideText = window.Text("")
+        MainText.append("Found %s save files" %len(saves))
+        for index , name in enumerate(saves):
+            SideText.append('> %s \n' % name.split(".")[0] if index == Target else '%s \n' % name.split(".")[0])
+        MainText.append('\nType the name of a save file to load')
+        SideText.append('> Go to menu' if Target == ExitIndex else 'Go to menu')
+
+        window.layout['Main'].update(window.Panel(MainText))
+        window.layout['Side'].update(window.Panel(SideText))
+        match Game.get_input():
+            case 'w':
+                Target -= 1 if Target >= 1 else ExitIndex
+            case 's':
+                Target += 1 if Target <= ExitIndex else 1
+            case '\r':
+                if Target == ExitIndex: return False
+                if Load(saves[Target]) == 0: return False
+    return True
+
         
 def AutoSave():
     if CurrentSaveFileName != "":
         Save(CurrentSaveFileName)
 
 def Save(SaveName:str):
-    Game.Clear()
     items = []
     equiped = player.Equiped
     for x in player.Inventory:
@@ -658,13 +663,13 @@ def Load(SaveName:str):
         with open(SaveFilePath+"/"+SaveName+".json", "r") as read_file:
             data = json.load(read_file)
     except:
-        print("save file doesn't exist!")
+        window.layout['Side'].update(window.Panel(window.Text("Can't load this save file!",style="red")))
         time.sleep(2)
         return 0
     if data['GameVersion'] != GameVersion:
-        print("Save game version is diffrent form curent version\nLoad? Yes/No")
+        window.layout['Side'].update(window.Panel(window.Text("Save game version is diffrent form curent version\nLoad? Y/N")))
         answer = input().lower()
-        if answer != "yes" or answer != "y": return 0
+        if answer == "n": return 0
     
     player.SetAllStats(data['Player'],data['PlayerClass'])
     player.Gold = data['Inventory']['Gold']
@@ -679,27 +684,27 @@ def Load(SaveName:str):
 def Debug():
     pass
 
+
 def DeveloperInfoMenu():
-    while True:
-        Game.Clear()
-        rprint("[blue]Development info[/blue]\n\n")
-        print("Game Roadmap:",
-            "1.Add shops and currency",
-            "2.Balance current gameplay",
-            "3.Add more Items and Monsters",
-            "4.Add Leveling system and exp gathering from fights",
-            "5.Expand loot tables and refactor it's code\n",
-            "Now i'm adding shops",sep="\n")
-        rprint('[magenta]Press any button to continue[/magenta]',sep="\n")
-        Game.wait_for_input()
-        return
+    text = window.Text("")
+    text.append("Development info\n\n",style="cyan")
+    text.append("Game Roadmap:\n")
+    text.append("1.Add shops and currency\n")
+    text.append("2.Balance current gameplay\n")
+    text.append("3.Add more Items and Monsters\n")
+    text.append("4.Add Leveling system and exp gathering from fights\n")
+    text.append("5.Expand loot tables and refactor it's code\n")
+    text.append("Now i'm adding shops\n")
+    text.append('Press any button to continue',style="bright_black")
+    return text
 
 
 
 if __name__ == '__main__':
-    Game.window("Rpg Game",55,15)
-    while True:
-        Menu()
+    #Game.window("Rpg Game",55,15)
+    with window.Live(window.layout,screen=True) as live:
+        while True:
+            Menu()
 
 
 '''
