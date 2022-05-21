@@ -846,9 +846,6 @@ def DeveloperInfoMenu():
 
 
 if __name__ == '__main__':
-    arrow = ord(Game.get_input())
-    print(arrow)
-    Game.wait_for_input()
     with Engine.Live(Engine.layout,screen=True) as live:
         Menu()
 
