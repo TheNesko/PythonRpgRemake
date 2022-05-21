@@ -355,6 +355,7 @@ ZombieLoot.addLoot(None,100)
 Zombie = Monster('Zombie',60,15,20,ZombieLoot)
 #----Warewolf----
 WarewolfLoot = LootTable()
+WarewolfLoot.addLoot(IronHelmet,7)
 WarewolfLoot.addLoot(IronChestplate,5)
 WarewolfLoot.addLoot(IronLeggins,7)
 WarewolfLoot.addLoot(WoodenBow,10)
@@ -375,15 +376,30 @@ SkeletonLoot.addLoot(None,100)
 Skeleton = Monster('Skeleton',45,10,10,SkeletonLoot)
 #-----Ghost-----
 GhostLoot = LootTable()
-GhostLoot.addLoot(BegginersWand,9)
-GhostLoot.addLoot(WizardHat,11)
+GhostLoot.addLoot(BegginersWand,5)
+GhostLoot.addLoot(WizardHat,9)
 GhostLoot.addLoot(StudentCape,10)
 GhostLoot.addLoot(MagicTome,8)
-GhostLoot.addLoot(MagicOrb,5)
 GhostLoot.addLoot(None,100)
 Ghost = Monster('Ghost',15,5,500,GhostLoot)
-
-
+#-----Thief-----
+ThiefLoot = LootTable()
+ThiefLoot.addLoot(LeatherHelmet,6)
+ThiefLoot.addLoot(LeatherChestplate,4)
+ThiefLoot.addLoot(LeatherLeggins,5)
+ThiefLoot.addLoot(LeatherGloves,7)
+ThiefLoot.addLoot(IronDagger,3)
+ThiefLoot.addLoot(None,100)
+Thief = Monster('Thief',25,10,5,ThiefLoot)
+#-----Wraith-----
+WraithLoot = LootTable()
+WraithLoot.addLoot(BegginersWand,9)
+WraithLoot.addLoot(StudentCape,7)
+WraithLoot.addLoot(MagicTome,8)
+WraithLoot.addLoot(MagicOrb,5)
+WraithLoot.addLoot(None,100)
+Wraith = Monster('Wraith',100,15,5,WraithLoot)
+#-----Wraith-----
 #===========================
 
 def ShowInventory():
