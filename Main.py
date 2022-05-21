@@ -106,7 +106,7 @@ class Player:
         self.Class = None
         self.Gold = 0
         self.Inventory = []
-        self.Potions['HealthPotion'] = 5
+        self.Potions['Health Potion'] = 5
         self.Equiped = {
             'Helmet' : None,
             'Chestplate' : None,
@@ -306,9 +306,9 @@ class Monster:
 #=========Instances=========
 player = Player()
 #----Classes---
-WarriorClass = CharacterClass('Warrior',70,30,20)
+WarriorClass = CharacterClass('Warrior',120,30,20)
 RangerClass = CharacterClass('Ranger',100,25,10)
-MageClass = CharacterClass('Mage',50,40,5)
+MageClass = CharacterClass('Mage',70,40,5)
 TitanClass = CharacterClass('Titan',1000,1000,1000)
 #----Items-----
 
@@ -337,7 +337,7 @@ WoodenBow = Item('Wooden Bow',10,10,0,0,RightHand,[RangerClass])
 #---Magic---
 BegginersWand = Item('Begginers Wand',10,10,0,0,RightHand,[MageClass])
 StudentCape = Item('Student Cape',10,5,5,5,Chestplate,[MageClass])
-WizardHat = Item('Wizzard Hat',10,5,5,0,Helmet,[MageClass])
+WizardHat = Item('Wizard Hat',10,5,5,0,Helmet,[MageClass])
 MagicTome = Item('Magic Tome',10,10,0,0,LeftHand,[MageClass])
 MagicOrb = Item('Magic Orb',10,20,0,0,LeftHand,[MageClass])
 #---Other---
@@ -362,7 +362,7 @@ WarewolfLoot.addLoot(BegginersWand,10)
 WarewolfLoot.addLoot(IronDagger,10)
 WarewolfLoot.addLoot(IronSword,7)
 WarewolfLoot.addLoot(None,100)
-Warewolf = Monster("Warewolf",70,20,30,WarewolfLoot)
+Warewolf = Monster("Warewolf",50,20,20,WarewolfLoot)
 #----Skeleton----
 SkeletonLoot = LootTable()
 SkeletonLoot.addLoot(Chainmail,10)
@@ -381,9 +381,8 @@ GhostLoot.addLoot(StudentCape,10)
 GhostLoot.addLoot(MagicTome,8)
 GhostLoot.addLoot(MagicOrb,5)
 GhostLoot.addLoot(None,100)
-Ghost = Monster('Ghost',25,5,500,GhostLoot)
+Ghost = Monster('Ghost',15,5,500,GhostLoot)
 
-player.Inventory.append(LeatherChestplate)
 
 #===========================
 
@@ -445,7 +444,7 @@ def ShowEquipment():
             Item = player.Equiped[name]
             if TargetOption == index:
                 EquipmentText.append("> %s - %s \n" %(name,Item),style="u")
-                TargetItem = name
+                TargetItem = Item
             else: EquipmentText.append("%s - %s \n" %(name,Item))
         if TargetOption == ExitIndex: EquipmentText.append("> Go back", style="u")
         else: EquipmentText.append("Go back")
@@ -556,7 +555,7 @@ def NextTurn():
     
 def Fight(Monster:Monster):
     Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
-    Options = ["Attack","inventory","Run Away"]
+    Options = ["Attack","Inventory","Equipment","Run Away"]
     TargetOption = 0
     ExitIndex = len(Options)
     enemy = Monster
@@ -606,12 +605,14 @@ def Fight(Monster:Monster):
                             Engine.layout['Side'].update(Engine.Panel(SideText))
                             return 0
                         player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
-                        SideText.append("\n%s dealt %s damage " %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
-                        SideText.append("Player's Health %s/%s " %(player.Stats['Health'],player.Stats['MaxHealth']))
+                        SideText.append("\n%s dealt %s damage \n" %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
+                        SideText.append("Player's Health %s/%s \n" %(player.Stats['Health'],player.Stats['MaxHealth']))
                         Engine.layout['Side'].update(Engine.Panel(SideText))
                         Game.wait_for_input()
                     case 1:
                         ShowInventory()
+                    case 2:
+                        ShowEquipment()
                     case ExitIndex:
                         x = random.randint(0,1)
                         if x == 0:
@@ -680,7 +681,7 @@ def Play():
                                         if userInput == '\r' and SaveFileName != "": break
                                         SaveFileName = Engine.Text(Game.TextBoxInput(SaveFileName,userInput))
                                         HelpText = Engine.Text("Type a save file name\n")
-                                        Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(HelpText,SaveFileName)))
+                                        Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(HelpText,SaveFileName,justify="center")))
                                     Save(str(SaveFileName))
                                     player.Die()
                                     return 0
@@ -812,7 +813,7 @@ def Load(SaveName:str):
             case 'n':
                 return 0
             case 'y':
-                player.SetAllStats(data['Player'],data['PlayerClass'])
+                player.SetAllStats(data['Player'],data['PlayerClass'])  #TODO fix player class not loading
                 player.Gold = data['Inventory']['Gold']
                 player.Potions = data['Inventory']['Potions']
                 player.Equiped = data['Inventory']['Equiped']
