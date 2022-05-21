@@ -502,9 +502,9 @@ def NextTurn():
     Engine.layout['Main'].update(Engine.Panel(MainText,title=f"Health {player.GetHealth()}/{player.GetMaxHealth()}"))
     rng = random.randint(0,100)
     SideText = Engine.Text("",justify="center")
-    if rng in range(0,30):
+    if rng in range(0,20):
         Engine.layout['Side'].update(Engine.Panel(Engine.Text("Lucky you! Nothing happend",justify="center")))
-    elif rng in range(31,50):
+    elif rng in range(21,45):
         SideText.append('You found a place to rest\n')
         ProcentHealthRested = random.randint(5,25)/100
         HpRested = round(player.GetMaxHealth() * ProcentHealthRested)
@@ -512,7 +512,7 @@ def NextTurn():
         SideText.append("And recoverd %s Health\n" % HpRested)
         SideText.append("Current Health %s/%s" %(round(player.GetHealth()),player.GetMaxHealth()))
         Engine.layout['Side'].update(Engine.Panel(SideText))
-    elif rng in range(51,80):
+    elif rng in range(46,80):
         RandomEnemy = RollNextEnemy()
         TargetOption = 0
         while True:
