@@ -17,7 +17,7 @@ Engine.layout.split_column(
 
 
 #---------
-GameVersion= "0.0.3"
+GameVersion= "0.0.5"
 SaveFilePath = os.getenv('APPDATA')+"\SuperNiceGame"
 CurrentSaveFileName = ""
 try: 
@@ -39,7 +39,7 @@ class Player:
         self.Gold = 0
         self.Inventory = []
         self.Potions = {
-            'HealthPotion' : 5
+            'Health Potion' : 5
         }
         self.Equiped = {
             'Helmet' : None,
@@ -78,10 +78,12 @@ class Player:
 
     def UsePotion(self,Name:str):
         self.PotionHealProcent = 0.25
+        SideText = Engine.Text("")
         match Name:
-            case 'HealthPotion':
+            case 'Health Potion':
                 if self.Potions[Name] <= 0:
-                    print("You don't have any Health Potions")
+                    SideText.append("You don't have any Health Potions")
+                    Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory"))
                     Game.wait_for_input()
                     return
                 self.Potions[Name] -= 1
@@ -90,9 +92,10 @@ class Player:
                 player.SetHealth(player.GetHealth() + Heal)
                 HealthAfter = round(player.GetHealth())
                 HealValue = HealthAfter - HealthBefore
-                print("You've used a Health Potion")
-                rprint("It healed you for [green]%s[/green]" %HealValue)
-                rprint("Current health [green]%s[/green]/[red]%s[/red]" %(round(player.GetHealth()),player.GetMaxHealth()))
+                SideText.append("You've used a Health Potion\n")
+                SideText.append("It healed you for %s \n" %HealValue)
+                SideText.append("Current health %s/%s \n" %(round(player.GetHealth()),player.GetMaxHealth()))
+                Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory"))
                 Game.wait_for_input()
     
     def SetAllStats(self,NewStats,Class):
@@ -243,6 +246,7 @@ class Item:
         Item.ItemBase.append(self)
     
     def Use(self):
+        SideText = Engine.Text("")
         if len(self.ClassUse) != 0:
             ClassesToCheck = len(self.ClassUse)
             for Class in self.ClassUse:
@@ -250,20 +254,21 @@ class Item:
                     break
                 ClassesToCheck -= 1
                 if ClassesToCheck == 0:
-                    rprint("[blue]%s[/blue] is not for your class : [blue]%s[/blue]" % (self.name, player.Class))
+                    SideText.append("%s is not for your class : %s" % (self.name, player.Class))
                     Game.wait_for_input()
                     return
         if player.Equiped[self.EquipPlace] == None:
             player.Equiped[self.EquipPlace] = self.name
             player.Inventory.remove(self)
-            rprint("You've used [blue]%s[/blue]" % self.name)
+            SideText.append("You've used %s" % self.name)
         else:
-            rprint("You've exchanged a [blue]%s[/blue] for [blue]%s[/blue]" % (player.Equiped[self.EquipPlace], self.name))
+            SideText.append("You've exchanged a %s for %s" % (player.Equiped[self.EquipPlace], self.name))
             player.Inventory.append(Item.FindItem(player.Equiped[self.EquipPlace]))
             player.Equiped[self.EquipPlace] = self.name
             player.Inventory.remove(self)
         player.ResetStatsFromEquipment()
         player.AddStatsFromEquipment()
+        Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory"))
         Game.wait_for_input()
     
     def Sell(self):
@@ -378,40 +383,57 @@ GhostLoot.addLoot(MagicOrb,5)
 GhostLoot.addLoot(None,100)
 Ghost = Monster('Ghost',25,5,500,GhostLoot)
 
+player.Inventory.append(LeatherChestplate)
 
 #===========================
 
 def ShowInventory():
+    TargetOption = 0
+    TargetItem = None
     while True:
-        Game.Clear()
-        rprint("[yellow]Gold %s[/yellow]" % player.Gold)
-        rprint("[blue]Inventory[/blue]")
-        if not len(player.Inventory) <= 0:
-            for x in player.Inventory:
-                print(x.name)
-        rprint("\n[blue]Potions[/blue]")
-        for x in player.Potions:
-            print(x,"-",player.Potions[x])
-        rprint("\nType the name of and item you want to use\nType [red]'Sell'[/red] before an Item to sell it\n0.Go back")
-        answer = input()
-        Game.Clear()
-        if answer.lower().split(" ")[0] == "sell":
-            ItemForSell = answer.split(" ",1)[1]
-            if Item.FindItem(ItemForSell) != None:
-                ItemPrice = Item.FindItem(ItemForSell).Price
-                rprint("Do you want to sell %s for [yellow]%s Gold[/yellow]" %(ItemForSell,ItemPrice))
-                match input().lower():
-                    case 'yes' | 'y':
-                        Game.Clear()
-                        player.SellItem(ItemForSell)
-                        rprint("You just sold %s for [yellow]%s Gold[/yellow]" %(ItemForSell,ItemPrice))
-                        Game.wait_for_input()
-        match answer:
-            case '0':
-                return 0
-            case _:
-                player.UsePotion(answer)
-                player.UseItem(answer)
+        ExitIndex = len(player.Potions) + len(player.Inventory)
+        SideText = Engine.Text("")
+        SideText.append("Potions: \n")
+        for index, name in enumerate(player.Potions):
+            if index == TargetOption: 
+                SideText.append("> %s - %s\n" % (name,player.Potions[name]) ,style="u")
+                TargetItem = name
+            else: SideText.append("%s - %s\n" % (name,player.Potions[name]))
+        SideText.append("Items: \n")
+        if len(player.Inventory) > 0:
+            for index, Item in enumerate(player.Inventory):
+                if index+len(player.Potions) == TargetOption: 
+                    SideText.append("> %s \n" % Item.name ,style="u")
+                    TargetItem = Item.name
+                else: SideText.append("%s \n" % Item.name)
+            
+        if TargetOption == ExitIndex: SideText.append("> Go back \n",style="u")
+        else: SideText.append("Go back \n")
+
+        Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player"))
+        Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory"))
+        match Game.get_input():
+            case 'w' | "b'w'":
+                TargetOption -= 1
+                if TargetOption < 0: TargetOption = ExitIndex
+            case 's' | "b's'":
+                TargetOption += 1
+                if TargetOption > ExitIndex: TargetOption = 0
+            case '\r' | ' ':
+                if TargetOption == ExitIndex: return
+                if TargetItem != None:
+                    player.UsePotion(TargetItem)
+                    player.UseItem(TargetItem)
+                    # ItemPrice = Item.FindItem(TargetItem).Price
+                    # rprint("Do you want to sell %s for [yellow]%s Gold[/yellow]" %(TargetItem,ItemPrice))
+                    # match input().lower():
+                    #     case 'yes' | 'y':
+                    #         Game.Clear()
+                    #         player.SellItem(TargetItem)
+                    #         rprint("You just sold %s for [yellow]%s Gold[/yellow]" %(TargetItem,ItemPrice))
+                    #         Game.wait_for_input()
+
+                
 
 def ShowEquipment():
     TargetOption = 0
@@ -429,10 +451,10 @@ def ShowEquipment():
         else: EquipmentText.append("Go back")
         Engine.layout['Side'].update(Engine.Panel(EquipmentText,title="Equipement"))
         match Game.get_input():
-            case 'w':
+            case 'w' | "b'w'":
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's':
+            case 's' | "b's'":
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
@@ -455,10 +477,10 @@ def ChooseCharacter():
 
         Engine.layout['Main'].update(Engine.Panel(text,title="Character Select"))
         match Game.get_input():
-            case 'w':
+            case 'w' | "b'w'":
                 TargetCharacter -= 1
                 if TargetCharacter < 0: TargetCharacter = ExitIndex
-            case 's':
+            case 's' | "b's'":
                 TargetCharacter += 1
                 if TargetCharacter > ExitIndex: TargetCharacter = 0
             case '\r' | ' ':
@@ -477,88 +499,132 @@ def RollNextEnemy() -> Monster:
     return Monster.MonsterBase[value]
 
 def NextTurn():
+    MainText = Engine.Text("You took a next turn")
+    Engine.layout['Main'].update(Engine.Panel(MainText,title=f"Health {player.GetHealth()}/{player.GetMaxHealth()}"))
     rng = random.randint(0,100)
+    SideText = Engine.Text("",justify="center")
     if rng in range(0,30):
-        print('Lucky you! Nothing happend')
-        Game.wait_for_input()
+        Engine.layout['Side'].update(Engine.Panel(Engine.Text("Lucky you! Nothing happend",justify="center")))
     elif rng in range(31,50):
-        print('You found a place to rest')
+        SideText.append('You found a place to rest\n')
         ProcentHealthRested = random.randint(5,25)/100
         HpRested = round(player.GetMaxHealth() * ProcentHealthRested)
         player.SetHealth(player.GetHealth()+HpRested)
-        rprint("And recoverd [green]%s[/green] Health" % HpRested)
-        rprint("Current Health [green]%s[/green]/[red]%s[/red]" %(round(player.GetHealth()),player.GetMaxHealth()))
-        Game.wait_for_input()
+        SideText.append("And recoverd %s Health\n" % HpRested)
+        SideText.append("Current Health %s/%s" %(round(player.GetHealth()),player.GetMaxHealth()))
+        Engine.layout['Side'].update(Engine.Panel(SideText))
     elif rng in range(51,80):
         RandomEnemy = RollNextEnemy()
-        rprint('Oh no you came across a [blue]%s[/blue]' %RandomEnemy.name)
-        Game.wait_for_input()
-        Fight(RandomEnemy)
+        TargetOption = 0
+        while True:
+            SideText = Engine.Text("")
+            SideText.append('On your way you encounter a %s \n' %RandomEnemy.name)
+            SideText.append('Do you want to fight?\n')
+            AnswerText = Engine.Text("")
+            if TargetOption == 0: AnswerText.append('Yes/No').stylize("u",0,3)
+            else: AnswerText.append('Yes/No').stylize("u",4)
+            
+            Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(SideText,AnswerText,justify="center")))
+            match Game.get_input():
+                case 'w' | "b'w'":
+                    TargetOption -= 1
+                    if TargetOption < 0: TargetOption = 1
+                case 's' | "b's'":
+                    TargetOption += 1
+                    if TargetOption > 1: TargetOption = 0
+                case "\r" | " ":
+                    if TargetOption == 0:
+                        Fight(RandomEnemy)
+                        return
+                    EscapeChance = random.randint(0,2)
+                    if EscapeChance == 0:
+                        Engine.layout['Side'].update(Engine.Panel(Engine.Text("You failed to escape from a %s" %RandomEnemy.name)))
+                        Fight(RandomEnemy)
+                        return
+                    Engine.layout['Side'].update(Engine.Panel(Engine.Text("You've escaped from a %s" %RandomEnemy.name)))
+                    return
     elif rng in range(81,95):
-        player.Potions['HealthPotion'] += 1
-        print('Wow! you found a Healing potion\nYou now have %s' % player.Potions['HealthPotion'])
-        Game.wait_for_input()
+        player.Potions['Health Potion'] += 1
+        SideText.append('Wow! you found a Healing potion\nYou now have %s' % player.Potions['Health Potion'])
+        Engine.layout['Side'].update(Engine.Panel(SideText))
     elif rng in range(96,100):
         rngItem = random.randint(0,len(Item.ItemBase)-1)
         founditem = Item.ItemBase[rngItem]
         player.Inventory.append(founditem)
-        rprint('You found an [blue]%s[/blue] lying on the ground' % founditem.name)
-        Game.wait_for_input()
+        SideText.append('You found an %s lying on the ground' % founditem.name)
+        Engine.layout['Side'].update(Engine.Panel(SideText))
     
 def Fight(Monster:Monster):
-    Game.Clear()
+    Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
+    Options = ["Attack","inventory","Run Away"]
+    TargetOption = 0
+    ExitIndex = len(Options)
     enemy = Monster
     enemy.SetMaxHealth()
     while True:
         if player.GetHealth() <= 0:
-            print("You died!")
+            Engine.layout['Main'].update(Engine.Panel(GameNamePrint(),title="Game"))
+            Engine.layout['Side'].update(Engine.Panel(Engine.Text("You died!",style="red")))
             Game.wait_for_input()
             return 0
-        rprint("You're now fighting [blue]%s[/blue] "%enemy.name)
-        rprint("[green]%s[/green]/[red]%s[/red] Health" %(enemy.Stats['Health'],enemy.Stats['MaxHealth']))
-        rprint("[red]%s[/red] Attack " %enemy.Stats['Attack'])
-        rprint("[red]%s[/red] Defence " %enemy.Stats['Defence'])
-        rprint("1.Attack\n2.inventory\n3.Show Stats\n0.Run Away")
-        next_move = Game.get_input()
-        Game.Clear()
-        match next_move:
-            case '1':
-                rprint("[blue]You[/blue]'ve dealt [red] %s[/red] damage " %CalculateDamage(player.GetAttack(),enemy.Stats['Defence']))
-                enemy.Stats['Health'] -= CalculateDamage(player.GetAttack(),enemy.Stats['Defence'])
-                rprint('%s Health [green]%s[/green]/[red]%s[/red]' %(enemy.name,enemy.Stats['Health'],enemy.Stats['MaxHealth']))
-                if enemy.Stats['Health'] <= 0:
-                    rprint("You've killed [red]%s[red]" %enemy.name)
-                    dropped = enemy.LootTable.Roll()
-                    if not dropped == None:   
-                        rprint("It dropped a [green]%s[/green]" %dropped)
-                    Game.wait_for_input()
-                    return 0
-                player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
-                rprint("\n[blue]%s[/blue] dealt [red]%s[/red] damage " %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
-                rprint("Player's Health [green]%s[/green]/[red]%s[/red] " %(player.Stats['Health'],player.Stats['MaxHealth']))
-                Game.wait_for_input()
-                Game.Clear()
-            case '2':
-                ShowInventory()
-                Game.Clear()
-            case '3':
-                player.PrintStats()
-                Game.Clear()
-            case '0':
-                x = random.randint(0,1)
-                if x == 0:
-                    print('You escaped safely')
-                    Game.wait_for_input()
-                    return 0
-                else:
-                    print('You failled to escape')
-                    player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
-                    rprint("\n[blue]%s[/blue] dealt [red]%s[/red] damage " %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
-                    rprint("Player's Health [green]%s[/green]/[red]%s[/red] " %(player.Stats['Health'],player.Stats['MaxHealth']))
-                    Game.wait_for_input()
-                    Game.Clear()
-            case _:
-                Game.Clear()
+        MainText = Engine.Text("")
+        SideText = Engine.Text("")
+
+        for index , Option in enumerate(Options):
+            if TargetOption == index: MainText.append("> %s \n" %Option)
+            else: MainText.append("%s \n" %Option)
+
+        SideText.append("You're now fighting %s \n"%enemy.name)
+        SideText.append("%s/%s Health \n" %(enemy.Stats['Health'],enemy.Stats['MaxHealth']))
+        SideText.append("%s Attack \n" %enemy.Stats['Attack'])
+        SideText.append("%s Defence \n\n" %enemy.Stats['Defence'])
+        SideText.append(player.PrintStats())
+        Engine.layout['Side'].update(Engine.Panel(SideText))
+        Engine.layout['Main'].update(Engine.Panel(MainText,title="Fight"))
+
+        match Game.get_input():
+            case 'w' | "b'w'":
+                TargetOption -= 1
+                if TargetOption < 0: TargetOption = ExitIndex
+            case 's' | "b's'":
+                TargetOption += 1
+                if TargetOption > ExitIndex: TargetOption = 0
+            case '\r' | ' ':
+                match TargetOption:
+                    case 0:
+                        SideText = Engine.Text("")
+                        SideText.append("You've dealt %s damage \n" %CalculateDamage(player.GetAttack(),enemy.Stats['Defence']))
+                        enemy.Stats['Health'] -= CalculateDamage(player.GetAttack(),enemy.Stats['Defence'])
+                        SideText.append('%s Health %s/%s \n' %(enemy.name,enemy.Stats['Health'],enemy.Stats['MaxHealth']))
+                        if enemy.Stats['Health'] <= 0:
+                            SideText.append("You've killed %s \n" %enemy.name)
+                            dropped = enemy.LootTable.Roll()
+                            if dropped != None:   
+                                SideText.append("It dropped a %s" %dropped)
+                            else:
+                                SideText.append("It didn't drop anything")
+                            Engine.layout['Side'].update(Engine.Panel(SideText))
+                            return 0
+                        player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
+                        SideText.append("\n%s dealt %s damage " %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
+                        SideText.append("Player's Health %s/%s " %(player.Stats['Health'],player.Stats['MaxHealth']))
+                        Engine.layout['Side'].update(Engine.Panel(SideText))
+                        Game.wait_for_input()
+                    case 1:
+                        ShowInventory()
+                    case ExitIndex:
+                        x = random.randint(0,1)
+                        if x == 0:
+                            Engine.layout['Side'].update(Engine.Panel(Engine.Text("You've escaped from %s" %enemy.name)))
+                            return 0
+                        else:
+                            SideText = Engine.Text("")
+                            SideText.append('You failled to escape')
+                            player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
+                            SideText.append("\n%s dealt %s damage " %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
+                            SideText.append("Player's Health %s/%s " %(player.Stats['Health'],player.Stats['MaxHealth']))
+                            Engine.layout['Side'].update(Engine.Panel(SideText))
+                            Game.wait_for_input()
 
 def CalculateDamage(Damage:int,Defence:int):
     reduction = 1+Defence/100
@@ -568,7 +634,7 @@ def CalculateDamage(Damage:int,Defence:int):
 def Play():
     Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
     TargetOption = 0
-    Options = ['Next Turn','Shop (WIP)','Inventory','Equipment','Show Stats','Go to menu']
+    Options = ['Next Turn','Shop (WIP)','Inventory','Equipment','Go to menu']
     ExitIndex = len(Options)-1
     while True:
         if player.GetHealth() <= 0: 
@@ -576,31 +642,32 @@ def Play():
             return 0
         MainText = Engine.Text("")
         for index , name in enumerate(Options):
-            if index == TargetOption: MainText.append("> %s \n" %name)
+            if index == TargetOption: MainText.append("> %s \n" %name,style="u")
             else: MainText.append("%s \n" %name)
 
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Game"))
         match Game.get_input():
-            case 'w':
+            case 'w' | "b'w'":
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's':
+            case 's' | "b's'":
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
                 match TargetOption:
                     case 0:
                         NextTurn()
+                        Game.wait_for_input()
+                        Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
                     case 1:
                         pass
                     case 2:
                         ShowInventory()
+                        Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
                     case 3:
                         ShowEquipment()
-                        Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
-                    case 4:
                         Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
-                    case 5:
+                    case 4:
                         while True:
                             Game.Clear()
                             Engine.layout['Side'].update(Engine.Panel(Engine.Text("Do you want to save before quiting? Yes/No",justify='center')))
@@ -609,7 +676,7 @@ def Play():
                                     Engine.layout['Side'].update(Engine.Panel(Engine.Text("Type a save file name",justify='center')))
                                     SaveFileName = Engine.Text("")
                                     while True:
-                                        userInput = Game.get_input()
+                                        userInput = Engine.msvcrt.getwch()
                                         if userInput == '\r' and SaveFileName != "": break
                                         SaveFileName = Engine.Text(Game.TextBoxInput(SaveFileName,userInput))
                                         HelpText = Engine.Text("Type a save file name\n")
@@ -642,10 +709,10 @@ def Menu():
 
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Menu"))
         match Game.get_input():
-            case 'w':
+            case 'w' | "b'w'":
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's':
+            case 's' | "b's'":
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
@@ -687,10 +754,10 @@ def SavesMenu():
         Engine.layout['Main'].update(Engine.Panel(MainText))
         Engine.layout['Side'].update(Engine.Panel(SideText))
         match Game.get_input():
-            case 'w':
+            case 'w' | "b'w'":
                 Target -= 1
                 if Target < 0: Target = ExitIndex
-            case 's':
+            case 's' | "b's'":
                 Target += 1
                 if Target > ExitIndex: Target = 0
             case '\r' | ' ':
@@ -769,31 +836,26 @@ def DeveloperInfoMenu():
     text.append("4.Add Leveling system and exp gathering from fights\n")
     text.append("5.Expand loot tables and refactor it's code\n\n")
     text.append("Change Log:\n",style="spring_green4")
-    text.append("Added auto save\n")
+    text.append("Changed the game to work with the new GUI\n")
     text.append("fixed some crashes\n")
-    text.append("Currently reworking GUI\n")
+    text.append("for now removed selling items and gold\n")
+    text.append("Currently adding shops and merchants\n")
     text.append('Press any button to continue',style="blink bright_black")
     return text
 
 
 
 if __name__ == '__main__':
+    arrow = ord(Game.get_input())
+    print(arrow)
+    Game.wait_for_input()
     with Engine.Live(Engine.layout,screen=True) as live:
         Menu()
 
 
 '''
----------------------------------------------
+
 Ideas:
 1. Evade chance (not to get damaged for monsters and classes useful for ranger class)
----------------------------------------------
-TO DO:
-Gold ---DONE---
-shop ---NEXT---
-Add Gold To loot table
-Add more Items
-Add more Monsters
-Add EXP and LEVELS to player and Monsters
-Balance the game
----------------------------------------------
+
 '''

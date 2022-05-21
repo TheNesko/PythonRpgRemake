@@ -21,7 +21,7 @@ class Game:
     @staticmethod
     def get_input():
         answer = msvcrt.getwch()
-        return answer
+        return answer.lower()
 
     @staticmethod
     def wait_for_input():
@@ -51,3 +51,4 @@ class Game:
                     kernel32.SetConsoleMode(hCon, 0x0080)
             except Exception as e:
                 print('Cannot disable QuickEdit mode! ' + str(e))
+    
