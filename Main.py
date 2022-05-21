@@ -17,9 +17,8 @@ Engine.layout.split_column(
 
 
 #---------
-GameVersion= "0.0.5"
+GameVersion = "0.0.6"
 SaveFilePath = os.getenv('APPDATA')+"\SuperNiceGame"
-CurrentSaveFileName = ""
 try: 
     os.mkdir(SaveFilePath) 
 except OSError as error: 
@@ -51,6 +50,7 @@ class Player:
         self.EquipmentMaxHealth = 0
         self.EquipmentAttack = 0
         self.EquipmentDefence = 0
+        self.CurrentSaveFileName = None
     
     def UseItem(self,Name):
         if len(player.Inventory) <= 0: return
@@ -72,9 +72,8 @@ class Player:
         if player.Equiped[item.EquipPlace] != None:
             player.Equiped[item.EquipPlace] = None
             player.Inventory.append(item)
-            return Engine.Text("You've taken off a %s" % item.name).stylize("aquamarine3",19)
-        else:
-            return Engine.Text("You don't have that item equiped")
+            return Engine.Text("You've taken off a %s" % item.name)
+        return Engine.Text("You don't have that item equiped")
 
     def UsePotion(self,Name:str):
         self.PotionHealProcent = 0.25
@@ -153,6 +152,7 @@ class Player:
     def SetHealth(self,Value):
         self.Stats['Health'] = Value
         if self.GetHealth() > self.GetMaxHealth(): self.SetHealth(self.GetMaxHealth())
+        if self.GetHealth() < 0: self.SetHealth(0)
     
     def GetMaxHealth(self):
         return self.Stats['MaxHealth']
@@ -298,6 +298,14 @@ class Monster:
         }
         self.LootTable = LootTable
         Monster.MonsterBase.append(self)
+    
+    def GetHealth(self):
+        return self.Stats['Health']
+    
+    def SetHealth(self,value):
+        self.Stats['Health'] = value
+        if self.Stats['Health'] > self.Stats['MaxHealth']: self.Stats['Health'] = self.Stats['MaxHealth']
+        if self.Stats['Health'] < 0: self.Stats['Health'] = 0
     
     def SetMaxHealth(self):
         self.Stats['Health'] = self.Stats['MaxHealth']
@@ -608,9 +616,9 @@ def Fight(Monster:Monster):
                 match TargetOption:
                     case 0:
                         SideText = Engine.Text("")
-                        SideText.append("You've dealt %s damage \n" %CalculateDamage(player.GetAttack(),enemy.Stats['Defence']))
-                        enemy.Stats['Health'] -= CalculateDamage(player.GetAttack(),enemy.Stats['Defence'])
-                        SideText.append('%s Health %s/%s \n' %(enemy.name,enemy.Stats['Health'],enemy.Stats['MaxHealth']))
+                        SideText.append("You've dealt %s damage \n" %CalculateDamage(player.GetAttack() ,enemy.Stats['Defence']))
+                        enemy.SetHealth(enemy.GetHealth() - CalculateDamage(player.GetAttack() ,enemy.Stats['Defence']))
+                        SideText.append('%s Health %s/%s \n' %(enemy.name ,enemy.GetHealth() ,enemy.Stats['MaxHealth']))
                         if enemy.Stats['Health'] <= 0:
                             SideText.append("You've killed %s \n" %enemy.name)
                             dropped = enemy.LootTable.Roll()
@@ -649,7 +657,7 @@ def CalculateDamage(Damage:int,Defence:int):
     return int(result)
 
 def Play():
-    Engine.layout['Side'].update(Engine.Panel(GameNamePrint()))
+    Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
     TargetOption = 0
     Options = ['Next Turn','Shop (WIP)','Inventory','Equipment','Go to menu']
     ExitIndex = len(Options)-1
@@ -673,6 +681,7 @@ def Play():
             case '\r' | ' ':
                 match TargetOption:
                     case 0:
+                        AutoSave()
                         NextTurn()
                         Game.wait_for_input()
                         Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
@@ -684,7 +693,7 @@ def Play():
                     case 3:
                         ShowEquipment()
                         Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
-                    case 4:
+                    case ExitIndex:
                         answer = 0
                         while True:
                             text = Engine.Text("Do you want to save before quiting?\n")
@@ -702,19 +711,23 @@ def Play():
                                 case '\r' | ' ':
                                     match answer:
                                         case 0:
-                                            AutoSave()
                                             Engine.layout['Side'].update(Engine.Panel(Engine.Text("Type a save file name",justify='center')))
                                             SaveFileName = Engine.Text("")
                                             while True:
                                                 userInput = Engine.msvcrt.getwch()
-                                                if userInput == '\r' and SaveFileName != "": break
+                                                if userInput == '\r': break
                                                 SaveFileName = Engine.Text(Game.TextBoxInput(SaveFileName,userInput))
                                                 HelpText = Engine.Text("Type a save file name\n")
                                                 Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(HelpText,SaveFileName,justify="center")))
-                                            Save(str(SaveFileName))
+                                            if str(SaveFileName) == "":
+                                                if player.CurrentSaveFileName == "": 
+                                                    player.CurrentSaveFileName = ('AutoSave-%s-%s' %(player.Class,date.today()))
+                                                AutoSave()
+                                            else: Save(str(SaveFileName))
                                             player.Die()
                                             return 0
                                         case 1:
+                                            player.Die()
                                             return 0
 
 def GameNamePrint(Style:str = "red"):
@@ -747,7 +760,7 @@ def Menu():
                 match TargetOption:
                     case 0:
                         if ChooseCharacter():
-                            CurrentSaveFileName = f'AutoSave-{player.Class}{date.today()}'
+                            player.CurrentSaveFileName = ('AutoSave-%s-%s' %(player.Class,date.today()))
                             Play()
                     case 1:
                         if SavesMenu() == True:
@@ -790,13 +803,12 @@ def SavesMenu():
                 if Target > ExitIndex: Target = 0
             case '\r' | ' ':
                 if Target == ExitIndex: return False
-                if Load(str(saves[Target])) == 0: return False
+                if Load(str(saves[Target]).split(".json")[0]) == 0: return False
                 return True
 
-        
 def AutoSave():
-    if CurrentSaveFileName != "":
-        Save(CurrentSaveFileName)
+    if player.CurrentSaveFileName != "":
+        Save(player.CurrentSaveFileName)
 
 def Save(SaveName:str):
     items = []
@@ -819,19 +831,21 @@ def Save(SaveName:str):
         },
         "GameVersion": GameVersion
     }
-    time.sleep(1)
+    # time.sleep(1)
     with open(SaveFilePath+"/"+SaveName +".json", "w") as write_file:
         json.dump(Save, write_file)
-    CurrentSaveFileName = SaveName
+        write_file.close()
+    player.CurrentSaveFileName = SaveName
 
 def Load(SaveName:str):
-    CurrentSaveFileName = SaveName
+    player.CurrentSaveFileName = SaveName.split(".json")[0]
     Game.Clear()
     try:
-        with open(SaveFilePath+"/"+SaveName, "r") as read_file:
+        with open(SaveFilePath+"/"+SaveName+".json", "r") as read_file:
             data = json.load(read_file)
+            read_file.close()
     except:
-        Engine.layout['Side'].update(Engine.Panel(Engine.Text("Can't load this save file!",style="red")))
+        Engine.layout['Side'].update(Engine.Panel(Engine.Text("Can't open/load this save file!",style="red")))
         time.sleep(2)
         return 0
     if data['GameVersion'] != GameVersion:
