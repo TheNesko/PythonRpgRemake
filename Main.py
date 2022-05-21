@@ -98,8 +98,8 @@ class Player:
                 Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory"))
                 Game.wait_for_input()
     
-    def SetAllStats(self,NewStats,Class):
-        self.Class = Class
+    def SetAllStats(self,NewStats,NewClass): #TODO load class
+        self.Class = NewClass
         self.Stats = NewStats
     
     def ResetStats(self):
@@ -702,6 +702,7 @@ def Play():
                                 case '\r' | ' ':
                                     match answer:
                                         case 0:
+                                            AutoSave()
                                             Engine.layout['Side'].update(Engine.Panel(Engine.Text("Type a save file name",justify='center')))
                                             SaveFileName = Engine.Text("")
                                             while True:
@@ -724,7 +725,7 @@ def GameNamePrint(Style:str = "red"):
     return text
 
 def Menu():
-    options = ['1.Play','2.Load','3.Development Info','0.Exit']
+    options = ['Play','Load','Development Info','Exit']
     TargetOption = 0
     ExitIndex = len(options)-1
     while True:
@@ -803,6 +804,7 @@ def Save(SaveName:str):
     for x in player.Inventory:
         items.append(x.name)
     Save = {
+        "PlayerClass": player.Class,
         "Player" : {
             'Health' : player.GetHealth(),
             'MaxHealth' : player.GetMaxHealth(),
@@ -815,8 +817,7 @@ def Save(SaveName:str):
             'Potions' : player.Potions,
             'Equiped' : equiped
         },
-        "PlayerClass": player.Class,
-        "GameVersion": GameVersion,
+        "GameVersion": GameVersion
     }
     time.sleep(1)
     with open(SaveFilePath+"/"+SaveName +".json", "w") as write_file:
@@ -838,16 +839,15 @@ def Load(SaveName:str):
         match Game.get_input():
             case 'n':
                 return 0
-            case 'y':
-                player.SetAllStats(data['Player'],data['PlayerClass'])  #TODO fix player class not loading
-                player.Gold = data['Inventory']['Gold']
-                player.Potions = data['Inventory']['Potions']
-                player.Equiped = data['Inventory']['Equiped']
-                for x in data['Inventory']['Items']:
-                    for y in Item.ItemBase:
-                        if x == y.name:
-                            player.Inventory.append(y)
-                return 1
+    player.SetAllStats(data['Player'],data["PlayerClass"])
+    player.Gold = data['Inventory']['Gold']
+    player.Potions = data['Inventory']['Potions']
+    player.Equiped = data['Inventory']['Equiped']
+    for x in data['Inventory']['Items']:
+        for y in Item.ItemBase:
+            if x == y.name:
+                player.Inventory.append(y)
+    return 1
 
 def Debug():
     pass
