@@ -337,7 +337,7 @@ WoodenBow = Item('Wooden Bow',10,10,0,0,RightHand,[RangerClass])
 #---Magic---
 BegginersWand = Item('Begginers Wand',10,10,0,0,RightHand,[MageClass])
 StudentCape = Item('Student Cape',10,5,5,5,Chestplate,[MageClass])
-WizzardHat = Item('Wizzard Hat',10,5,5,0,Helmet,[MageClass])
+WizardHat = Item('Wizzard Hat',10,5,5,0,Helmet,[MageClass])
 MagicTome = Item('Magic Tome',10,10,0,0,LeftHand,[MageClass])
 MagicOrb = Item('Magic Orb',10,20,0,0,LeftHand,[MageClass])
 #---Other---
@@ -376,7 +376,7 @@ Skeleton = Monster('Skeleton',45,10,10,SkeletonLoot)
 #-----Ghost-----
 GhostLoot = LootTable()
 GhostLoot.addLoot(BegginersWand,9)
-GhostLoot.addLoot(WizzardHat,11)
+GhostLoot.addLoot(WizardHat,11)
 GhostLoot.addLoot(StudentCape,10)
 GhostLoot.addLoot(MagicTome,8)
 GhostLoot.addLoot(MagicOrb,5)
