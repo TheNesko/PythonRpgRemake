@@ -413,10 +413,10 @@ def ShowInventory():
         Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player"))
         Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory"))
         match Game.get_input():
-            case 'w' | "b'w'":
+            case 'w' :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' | "b's'":
+            case 's' :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
@@ -451,10 +451,10 @@ def ShowEquipment():
         else: EquipmentText.append("Go back")
         Engine.layout['Side'].update(Engine.Panel(EquipmentText,title="Equipement"))
         match Game.get_input():
-            case 'w' | "b'w'":
+            case 'w' :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' | "b's'":
+            case 's' :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
@@ -477,10 +477,10 @@ def ChooseCharacter():
 
         Engine.layout['Main'].update(Engine.Panel(text,title="Character Select"))
         match Game.get_input():
-            case 'w' | "b'w'":
+            case 'w' :
                 TargetCharacter -= 1
                 if TargetCharacter < 0: TargetCharacter = ExitIndex
-            case 's' | "b's'":
+            case 's' :
                 TargetCharacter += 1
                 if TargetCharacter > ExitIndex: TargetCharacter = 0
             case '\r' | ' ':
@@ -526,10 +526,10 @@ def NextTurn():
             
             Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(SideText,AnswerText,justify="center")))
             match Game.get_input():
-                case 'w' | "b'w'":
+                case 'w' :
                     TargetOption -= 1
                     if TargetOption < 0: TargetOption = 1
-                case 's' | "b's'":
+                case 's' :
                     TargetOption += 1
                     if TargetOption > 1: TargetOption = 0
                 case "\r" | " ":
@@ -583,10 +583,10 @@ def Fight(Monster:Monster):
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Fight"))
 
         match Game.get_input():
-            case 'w' | "b'w'":
+            case 'w' :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' | "b's'":
+            case 's' :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
@@ -647,10 +647,10 @@ def Play():
 
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Game"))
         match Game.get_input():
-            case 'w' | "b'w'":
+            case 'w' :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' | "b's'":
+            case 's' :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
@@ -709,10 +709,10 @@ def Menu():
 
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Menu"))
         match Game.get_input():
-            case 'w' | "b'w'":
+            case 'w' | "\r'P'":
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' | "b's'":
+            case 's' :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
             case '\r' | ' ':
@@ -754,10 +754,10 @@ def SavesMenu():
         Engine.layout['Main'].update(Engine.Panel(MainText))
         Engine.layout['Side'].update(Engine.Panel(SideText))
         match Game.get_input():
-            case 'w' | "b'w'":
+            case 'w' :
                 Target -= 1
                 if Target < 0: Target = ExitIndex
-            case 's' | "b's'":
+            case 's' :
                 Target += 1
                 if Target > ExitIndex: Target = 0
             case '\r' | ' ':
