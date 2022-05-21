@@ -685,26 +685,36 @@ def Play():
                         ShowEquipment()
                         Engine.layout['Side'].update(Engine.Panel(player.PrintStats()))
                     case 4:
+                        answer = 0
                         while True:
-                            Game.Clear()
-                            Engine.layout['Side'].update(Engine.Panel(Engine.Text("Do you want to save before quiting? Yes/No",justify='center')))
+                            text = Engine.Text("Do you want to save before quiting?\n")
+                            answerText = Engine.Text("")
+                            if answer == 0: answerText.append("Yes/No").stylize("u",0,3)
+                            else: answerText.append("Yes/No").stylize("u",4)
+                            Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(text,answerText,justify='center')))
                             match Game.get_input():
-                                case 'y':
-                                    Engine.layout['Side'].update(Engine.Panel(Engine.Text("Type a save file name",justify='center')))
-                                    SaveFileName = Engine.Text("")
-                                    while True:
-                                        userInput = Engine.msvcrt.getwch()
-                                        if userInput == '\r' and SaveFileName != "": break
-                                        SaveFileName = Engine.Text(Game.TextBoxInput(SaveFileName,userInput))
-                                        HelpText = Engine.Text("Type a save file name\n")
-                                        Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(HelpText,SaveFileName,justify="center")))
-                                    Save(str(SaveFileName))
-                                    player.Die()
-                                    return 0
-                                case 'n':
-                                    return 0
-                                case _:
-                                    break
+                                case 'w' :
+                                    answer -= 1
+                                    if answer < 0: answer = 1
+                                case 's' :
+                                    answer += 1
+                                    if answer > 1: answer = 0
+                                case '\r' | ' ':
+                                    match answer:
+                                        case 0:
+                                            Engine.layout['Side'].update(Engine.Panel(Engine.Text("Type a save file name",justify='center')))
+                                            SaveFileName = Engine.Text("")
+                                            while True:
+                                                userInput = Engine.msvcrt.getwch()
+                                                if userInput == '\r' and SaveFileName != "": break
+                                                SaveFileName = Engine.Text(Game.TextBoxInput(SaveFileName,userInput))
+                                                HelpText = Engine.Text("Type a save file name\n")
+                                                Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(HelpText,SaveFileName,justify="center")))
+                                            Save(str(SaveFileName))
+                                            player.Die()
+                                            return 0
+                                        case 1:
+                                            return 0
 
 def GameNamePrint(Style:str = "red"):
     text = Engine.Text("",justify="center")
