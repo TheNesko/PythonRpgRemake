@@ -50,14 +50,14 @@ class Item:
         Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %Main.PANEL_COLOR))
         time.sleep(1)
     
-    def Sell(self,player):
-        if len(player.Inventory) <= 0: return
-        for index , _ in enumerate(player.Inventory):
-            if player.Inventory[index] == self:
-                player.Gold += self.Price
-                player.Inventory.remove(self)
+    def ShowStats(self):
+        text = Engine.Text(
+            f"Name: {self.name}\nPrice: {self.Price}\nEquip Place: {self.EquipPlace}\nBonuses:\nHealth = {self.MaxHealth}\nDamage = {self.Damage}\nDefence = {self.Defence}"
+        )
+        return text
 
     def FindItem(ItemName):
+        if ItemName == None: return None
         for x in Item.ItemBase:
             if x.name == ItemName:
                 return x
@@ -158,29 +158,29 @@ MageClass = CharacterClass('Mage',70,40,5)
 TitanClass = CharacterClass('Titan',1000,1000,1000)
 
 #---Leather---
-LeatherHelmet = Item('Leather Helmet',10,0,5,0,'Helmet')
-LeatherChestplate = Item('Leather Chestplate',10,0,7,5,'Chestplate')
-LeatherLeggins = Item('Leather Leggins',10,0,5,0,'Leggins')
-LeatherGloves = Item('Leather Gloves',10,0,5,0,'LeftHand')
+LeatherHelmet = Item('Leather Helmet',15,0,5,0,'Helmet')
+LeatherChestplate = Item('Leather Chestplate',25,0,7,5,'Chestplate')
+LeatherLeggins = Item('Leather Leggins',15,0,5,0,'Leggins')
+LeatherGloves = Item('Leather Gloves',15,0,5,0,'LeftHand')
 #---Iron---
-IronHelmet = Item('Iron Helmet',10,0,5,5,'Helmet',[WarriorClass])
-IronChestplate = Item('Iron Chestplate',10,0,30,10,'Chestplate',[WarriorClass])
-IronLeggins = Item('Iron Leggins',10,0,10,0,'Leggins',[WarriorClass])
-IronShield = Item('Iron Shield',10,-10,20,0,'LeftHand',[WarriorClass])
-IronSword = Item('Iron Sword',10,10,0,0,'RightHand',[WarriorClass])
-IronDagger = Item('Iron Dagger',10,7,0,0,'RightHand',[RangerClass,MageClass])
+IronHelmet = Item('Iron Helmet',50,0,5,5,'Helmet',[WarriorClass])
+IronChestplate = Item('Iron Chestplate',100,0,30,10,'Chestplate',[WarriorClass])
+IronLeggins = Item('Iron Leggins',50,0,10,0,'Leggins',[WarriorClass])
+IronShield = Item('Iron Shield',70,-10,20,0,'LeftHand',[WarriorClass])
+IronSword = Item('Iron Sword',40,10,0,0,'RightHand',[WarriorClass])
+IronDagger = Item('Iron Dagger',25,7,0,0,'RightHand',[RangerClass,MageClass])
 #---Wooden---
-WoodenShield = Item('Wooden Shield',10,-5,10,0,'LeftHand',[WarriorClass])
-WoodenSword = Item('Wooden Sword',10,5,0,0,'RightHand',[WarriorClass])
-WoodenBow = Item('Wooden Bow',10,10,0,0,'RightHand',[RangerClass])
+WoodenShield = Item('Wooden Shield',15,-5,10,0,'LeftHand',[WarriorClass])
+WoodenSword = Item('Wooden Sword',15,5,0,0,'RightHand',[WarriorClass])
+WoodenBow = Item('Wooden Bow',20,10,0,0,'RightHand',[RangerClass])
 #---Magic---
-BegginersWand = Item('Begginers Wand',10,10,0,0,'RightHand',[MageClass])
-StudentCape = Item('Student Cape',10,5,5,5,'Chestplate',[MageClass])
-WizardHat = Item('Wizard Hat',10,5,5,0,'Helmet',[MageClass])
-MagicTome = Item('Magic Tome',10,10,0,0,'LeftHand',[MageClass])
-MagicOrb = Item('Magic Orb',10,20,0,0,'LeftHand',[MageClass])
+BegginersWand = Item('Begginers Wand',45,10,0,0,'RightHand',[MageClass])
+StudentCape = Item('Student Cape',100,5,5,5,'Chestplate',[MageClass])
+WizardHat = Item('Wizard Hat',75,5,5,0,'Helmet',[MageClass])
+MagicTome = Item('Magic Tome',50,10,0,0,'LeftHand',[MageClass])
+MagicOrb = Item('Magic Orb',120,20,0,0,'LeftHand',[MageClass])
 #---Other---
-Chainmail = Item('Chainmail',10,0,10,5,'Chestplate',[RangerClass,WarriorClass])
+Chainmail = Item('Chainmail',35,0,10,5,'Chestplate',[RangerClass,WarriorClass])
 
 
 #----Zombie----

@@ -65,12 +65,22 @@ class Player:
                 break
         self.RecalculateStatsFromEquipment()
     
-    def SellItem(self,Name):
-        if len(player.Inventory) <= 0: return
-        for x in player.Inventory:
-            if Name == x.name:
-                x.Sell()
-                break
+    def SellItem(self,Item):
+        if len(self.Inventory) <= 0: return False
+        for x in self.Inventory:
+            if Item == x:
+                self.Inventory.remove(x)
+                self.Gold += x.Price
+                return True
+        return False
+
+                
+    
+    def BuyItem(self,Item):
+        if self.Gold >= Item.Price:
+            self.Inventory.append(Item)
+            return True
+        return False
     
     def RemoveEquipment(self,EquipedItem):
         item = Item.FindItem(EquipedItem)
@@ -285,13 +295,82 @@ def Load(SaveName:str):
                 player.Inventory.append(y)
     return 1
 
-def Shop():
-    pass
+def GenerateItemsSelled():
+    SelledItems = []
+    while len(SelledItems) <= 10:
+        rng = random.randrange(0,len(Item.ItemBase))
+        item = Item.ItemBase[rng]
+        isActive = False
+        for ActiveItem in SelledItems:
+            if ActiveItem == item:
+                isActive = True
+                break
+        if isActive == False: SelledItems.append(item)
+    return SelledItems
 
-def ShowInventory():    # TODO ADD SHOWING ITEM'S STATS ON A MAIN SCREEN WHILE IT IS TARGETED
+def Shop(SelledItems):
+    ActiveWindow = 0  # 0-inventory  1-shop
     TargetOption = 0
-    TargetItem = None
+    ShopItems = SelledItems
+    Engine.layout['Shop'].visible = True
     while True:
+        TargetItem = None
+        ShopText = Engine.Text()
+        SideText = Engine.Text()
+        if ActiveWindow == 0: ExitIndex = len(player.Inventory)
+        else: ExitIndex = len(ShopItems)
+        if TargetOption > ExitIndex: TargetOption = 0
+        if len(player.Inventory) > 0:
+            for index, Item in enumerate(player.Inventory):
+                if index == TargetOption and ActiveWindow == 0: 
+                    SideText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
+                    TargetItem = Item
+                else: SideText.append("%s \n" % Item.name)
+        if TargetOption == ExitIndex and ActiveWindow == 0: SideText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
+        else: SideText.append("Go back \n")
+
+        for index, Item in enumerate(ShopItems):
+            if index == TargetOption and ActiveWindow == 1: 
+                ShopText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
+                TargetItem = Item
+            else: ShopText.append("%s \n" % Item.name)
+        if TargetOption == ExitIndex and ActiveWindow == 1: ShopText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
+        else: ShopText.append("Go back \n")
+        
+        if TargetItem != None: Engine.layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
+        else: Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
+
+        Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
+        Engine.layout['Shop'].update(Engine.Panel(ShopText,title="Shop",style="%s" %PANEL_COLOR))
+        match Game.get_input():
+            case 'w' :
+                TargetOption -= 1
+                if TargetOption < 0: TargetOption = ExitIndex
+            case 's' :
+                TargetOption += 1
+                if TargetOption > ExitIndex: TargetOption = 0
+            case 'a' :
+                ActiveWindow -= 1
+                if ActiveWindow < 0: ActiveWindow = 1
+            case 'd' :
+                ActiveWindow += 1
+                if ActiveWindow > 1: ActiveWindow = 0
+            case '\r' | ' ':
+                if TargetOption == ExitIndex:
+                    Engine.layout['Shop'].visible = False
+                    return
+                if TargetItem != None:
+                    if ActiveWindow == 0: 
+                        if player.SellItem(TargetItem) == True:
+                            ShopItems.append(TargetItem)
+                    if ActiveWindow == 1:
+                        if player.BuyItem(TargetItem) == True:
+                            ShopItems.remove(TargetItem)
+
+def ShowInventory(): 
+    TargetOption = 0
+    while True:
+        TargetItem = None
         ExitIndex = len(player.Potions) + len(player.Inventory)
         SideText = Engine.Text("")
         SideText.append("Potions: \n")
@@ -300,18 +379,21 @@ def ShowInventory():    # TODO ADD SHOWING ITEM'S STATS ON A MAIN SCREEN WHILE I
                 SideText.append("> %s - %s\n" % (name,player.Potions[name]) ,style="u %s" %HIGH_LIGHT_COLOR)
                 TargetItem = name
             else: SideText.append("%s - %s\n" % (name,player.Potions[name]))
-        SideText.append("Items: \n")
+        SideText.append("\nItems: \n")
         if len(player.Inventory) > 0:
-            for index, Item in enumerate(player.Inventory):
+            for index, ItemObject in enumerate(player.Inventory):
                 if index+len(player.Potions) == TargetOption: 
-                    SideText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
-                    TargetItem = Item.name
-                else: SideText.append("%s \n" % Item.name)
+                    SideText.append("> %s \n" % ItemObject.name ,style="u %s" %HIGH_LIGHT_COLOR)
+                    TargetItem = ItemObject.name
+                else: SideText.append("%s \n" % ItemObject.name)
             
         if TargetOption == ExitIndex: SideText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
         else: SideText.append("Go back \n")
 
-        Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
+        ItemStats = Item.FindItem(TargetItem)
+        if ItemStats != None: Engine.layout['Main'].update(Engine.Panel(ItemStats.ShowStats(),title="Player",style="%s" %PANEL_COLOR))
+        else: Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
+
         Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
         match Game.get_input():
             case 'w' :
@@ -328,19 +410,23 @@ def ShowInventory():    # TODO ADD SHOWING ITEM'S STATS ON A MAIN SCREEN WHILE I
 
 def ShowEquipment():
     TargetOption = 0
-    TargetItem = None
     ExitIndex = len(player.Equiped)
     while True:
+        TargetItem = None
         EquipmentText = Engine.Text("")
         for index , name in enumerate(player.Equiped):
-            Item = player.Equiped[name]
+            ItemName = player.Equiped[name]
             if TargetOption == index:
-                EquipmentText.append("> %s - %s \n" %(name,Item) ,style="u %s" %HIGH_LIGHT_COLOR)
-                TargetItem = Item
-            else: EquipmentText.append("%s - %s \n" %(name,Item))
+                EquipmentText.append("> %s - %s \n" %(name,ItemName) ,style="u %s" %HIGH_LIGHT_COLOR)
+                TargetItem = ItemName
+            else: EquipmentText.append("%s - %s \n" %(name,ItemName))
         if TargetOption == ExitIndex: EquipmentText.append("> Go back" ,style="u %s" %HIGH_LIGHT_COLOR)
         else: EquipmentText.append("Go back")
-        Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
+
+        ItemStats = Item.FindItem(TargetItem)
+        if ItemStats != None: Engine.layout['Main'].update(Engine.Panel(ItemStats.ShowStats(),title="Player",style="%s" %PANEL_COLOR))
+        else: Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
+
         Engine.layout['Side'].update(Engine.Panel(EquipmentText,title="Equipement",style="%s" %PANEL_COLOR))
         match Game.get_input():
             case 'w' :
@@ -525,6 +611,8 @@ def Play():
     TargetOption = 0
     Options = ['Next Turn','Shop (WIP)','Inventory','Equipment','Go to menu']
     ExitIndex = len(Options)-1
+    ShopItems = GenerateItemsSelled()
+    TurnsAfterShopChange = 0
     while True:
         if player.GetHealth() <= 0: 
             player.Die()
@@ -547,16 +635,17 @@ def Play():
                     case 0:
                         AutoSave()
                         NextTurn()
+                        TurnsAfterShopChange += 1
+                        if TurnsAfterShopChange >= 5:
+                            ShopItems = GenerateItemsSelled()
+                            TurnsAfterShopChange = 0
                         Game.wait_for_input()
-                        Engine.layout['Side'].update(Engine.Panel(player.PrintStats(),style="%s" %PANEL_COLOR))
                     case 1:
-                        pass
+                        Shop(ShopItems)
                     case 2:
                         ShowInventory()
-                        Engine.layout['Side'].update(Engine.Panel(player.PrintStats(),style="%s" %PANEL_COLOR))
                     case 3:
                         ShowEquipment()
-                        Engine.layout['Side'].update(Engine.Panel(player.PrintStats(),style="%s" %PANEL_COLOR))
                     case ExitIndex:
                         answer = 0
                         while True:
@@ -593,6 +682,7 @@ def Play():
                                         case 1:
                                             player.Die()
                                             return 0
+        Engine.layout['Side'].update(Engine.Panel(player.PrintStats(),style="%s" %PANEL_COLOR))
 
 def GameNamePrint(Style:str = "spring_green2"):
     text = Engine.Text("",justify="center")
@@ -644,7 +734,8 @@ def DeveloperInfoMenu():
                 "4.Add Leveling system and exp gathering from fights\n5.Expand loot tables and refactor it's code\n\n")
     text.append("Change Log:\n",style="spring_green4")
     text.append("Changed the game to work with the new GUI\nfixed some crashes\nfor now removed selling items and gold\n\n",
-    "Currently adding shops and merchants\nMerchants you will be able to encounter in the wilderness. They can sell you some really good items but they are really rare\n\n")
+                "Currently adding shops(shop is done) and merchants\nMerchants you will be able to encounter in the wilderness.",
+                "They can sell you some really good items but they are really rare\n\n")
     text.append('Press any button to continue',style="blink bright_black")
     return text
 
