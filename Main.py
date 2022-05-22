@@ -342,7 +342,7 @@ def Shop(SelledItems):
         else: ShopText.append("Go back \n")
         
         if TargetItem != None: Engine.layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
-        else: Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
+        else: Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
 
         Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
         Engine.layout['Shop'].update(Engine.Panel(ShopText,title="Shop",style="%s" %PANEL_COLOR))
@@ -613,7 +613,7 @@ def NextTurn():
 def Play():
     Engine.layout['Side'].update(Engine.Panel(player.PrintStats(),style="%s" %PANEL_COLOR))
     TargetOption = 0
-    Options = ['Next Turn','Shop (WIP)','Inventory','Equipment','Go to menu']
+    Options = ['Next Turn','Shop','Inventory','Equipment','Go to menu']
     ExitIndex = len(Options)-1
     ShopItems = GenerateItemsSelled()
     TurnsAfterShopChange = 0
