@@ -7,8 +7,6 @@ from rich.screen import Screen
 from rich.layout import Layout
 from rich.panel import Panel
 from rich.console import Console
-from rich.console import Group
-from rich import print
 
 class Game:
     @staticmethod
