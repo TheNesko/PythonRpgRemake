@@ -7,6 +7,8 @@ from rich.screen import Screen
 from rich.layout import Layout
 from rich.panel import Panel
 from rich.console import Console
+from rich.theme import Theme
+
 
 class Game:
     @staticmethod

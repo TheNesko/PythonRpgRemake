@@ -3,11 +3,14 @@ import rich , Engine
 from datetime import date
 from Engine import Game
 
+import FontSize
 from Instances import *
 
 #----Window-Setup-----#
 Game.disable_quickedit()
-Game.window('Game',50,40)
+Game.window('Game',70,30)
+#Set font size to 20
+FontSize.run(20)
 
 Engine.layout = Engine.Layout()
 Engine.console = Engine.Console()
@@ -78,6 +81,7 @@ class Player:
     
     def BuyItem(self,Item):
         if self.Gold >= Item.Price:
+            self.Gold -= Item.Price
             self.Inventory.append(Item)
             return True
         return False
@@ -367,7 +371,7 @@ def Shop(SelledItems):
                         if player.BuyItem(TargetItem) == True:
                             ShopItems.remove(TargetItem)
 
-def ShowInventory(): 
+def ShowInventory():  #TODO ADD PAGES TO INVENTORY/SHOP SO ITEMS WON'T GO BEYOND THE SCREEN
     TargetOption = 0
     while True:
         TargetItem = None
@@ -730,18 +734,18 @@ def DeveloperInfoMenu():
     text = Engine.Text("")
     text.append("Development info\n\n",style="cyan")
     text.append("Game Roadmap:\n",style="deep_sky_blue4")
-    text.append("1.Add shops and currency\n2.Balance current gameplay\n3.Add more Items and Monsters\n",
-                "4.Add Leveling system and exp gathering from fights\n5.Expand loot tables and refactor it's code\n\n")
+    text.append("1.Add shops and currency\n2.Balance current gameplay\n3.Add more Items and Monsters\n")
+    text.append("4.Add Leveling system and exp gathering from fights\n5.Expand loot tables and refactor it's code\n\n")
     text.append("Change Log:\n",style="spring_green4")
-    text.append("Changed the game to work with the new GUI\nfixed some crashes\nfor now removed selling items and gold\n\n",
-                "Currently adding shops(shop is done) and merchants\nMerchants you will be able to encounter in the wilderness.",
-                "They can sell you some really good items but they are really rare\n\n")
+    text.append("Changed the game to work with the new GUI\nfixed some crashes\nfor now removed selling items and gold\n\n")
+    text.append("Currently adding shops(shop is done) and merchants\nMerchants you will be able to encounter in the wilderness.")
+    text.append("They can sell you some really good items but they are really rare\n\n")
     text.append('Press any button to continue',style="blink bright_black")
     return text
 
 
 if __name__ == '__main__':
-    with Engine.Live(Engine.layout,screen=True) as live:
+    with Engine.Live(Engine.layout,refresh_per_second=60,screen=True) as live:
         Menu()
 
 
