@@ -1,16 +1,16 @@
 import time, sys, os, random, json
 import rich , Engine
 from datetime import date
-from Engine import Game
+from Engine import Game,Key
 
 import FontSize
 from Instances import *
 
 #----Window-Setup-----#
 Game.disable_quickedit()
-Game.window('Game',70,30)
+Game.window('Game',50,30)
 #Set font size to 20
-FontSize.run(20)
+FontSize.run(22)
 
 Engine.layout = Engine.Layout()
 Engine.console = Engine.Console()
@@ -224,13 +224,13 @@ def SavesMenu():
         Engine.layout['Main'].update(Engine.Panel(MainText,style="%s" %PANEL_COLOR))
         Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'w' :
+            case Key.KEY_w | Key.KEY_Aup :
                 Target -= 1
                 if Target < 0: Target = ExitIndex
-            case 's' :
+            case Key.KEY_s | Key.KEY_Adown :
                 Target += 1
                 if Target > ExitIndex: Target = 0
-            case '\r' | ' ':
+            case Key.KEY_enter | Key.KEY_space :
                 if Target == ExitIndex: return False
                 if Load(str(saves[Target]).split(".json")[0]) == 0: return False
                 return True
@@ -317,15 +317,25 @@ def Shop(SelledItems):
     TargetOption = 0
     ShopItems = SelledItems
     Engine.layout['Shop'].visible = True
+    CurrentPage = 0
+    ItemsPerPage = 10
     while True:
+        Pages = [[]]
+        LoopedPage = 0
+        for x in player.Inventory:
+            if len(Pages[LoopedPage]) >= ItemsPerPage:
+                LoopedPage += 1
+                Pages.append([])
+            Pages[LoopedPage].append(x)
+
         TargetItem = None
         ShopText = Engine.Text()
         SideText = Engine.Text()
-        if ActiveWindow == 0: ExitIndex = len(player.Inventory)
+        if ActiveWindow == 0: ExitIndex = len(Pages[CurrentPage])
         else: ExitIndex = len(ShopItems)
-        if TargetOption > ExitIndex: TargetOption = 0
-        if len(player.Inventory) > 0:
-            for index, Item in enumerate(player.Inventory):
+        if TargetOption > ExitIndex: TargetOption = ExitIndex
+        if len(Pages[CurrentPage]) > 0:
+            for index, Item in enumerate(Pages[CurrentPage]):
                 if index == TargetOption and ActiveWindow == 0: 
                     SideText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
                     TargetItem = Item
@@ -344,22 +354,27 @@ def Shop(SelledItems):
         if TargetItem != None: Engine.layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
         else: Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
 
-        Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
+        Engine.layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage}",style="%s" %PANEL_COLOR))
         Engine.layout['Shop'].update(Engine.Panel(ShopText,title="Shop",style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'w' :
+            case Key.KEY_w | Key.KEY_Aup :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' :
+            case Key.KEY_s | Key.KEY_Adown :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
-            case 'a' :
-                ActiveWindow -= 1
-                if ActiveWindow < 0: ActiveWindow = 1
-            case 'd' :
+            case Key.KEY_a | Key.KEY_Aleft :
+                if ActiveWindow == 0:
+                    CurrentPage -= 1
+                    if CurrentPage < 0 : CurrentPage = len(Pages)-1
+            case Key.KEY_d | Key.KEY_Aright :
+                if ActiveWindow == 0:
+                    CurrentPage += 1
+                    if CurrentPage > len(Pages)-1: CurrentPage = 0
+            case Key.KEY_tab:
                 ActiveWindow += 1
                 if ActiveWindow > 1: ActiveWindow = 0
-            case '\r' | ' ':
+            case Key.KEY_enter | Key.KEY_space :
                 if TargetOption == ExitIndex:
                     Engine.layout['Shop'].visible = False
                     return
@@ -371,11 +386,22 @@ def Shop(SelledItems):
                         if player.BuyItem(TargetItem) == True:
                             ShopItems.remove(TargetItem)
 
-def ShowInventory():  #TODO ADD PAGES TO INVENTORY/SHOP SO ITEMS WON'T GO BEYOND THE SCREEN
+def ShowInventory(): 
     TargetOption = 0
+    CurrentPage = 0
+    ItemsPerPage = 10
     while True:
+        Pages = [[]]
+        #SET PAGES
+        LoopedPage = 0
+        for x in player.Inventory:
+            if len(Pages[LoopedPage]) >= ItemsPerPage:
+                LoopedPage += 1
+                Pages.append([])
+            Pages[LoopedPage].append(x)
         TargetItem = None
-        ExitIndex = len(player.Potions) + len(player.Inventory)
+        ExitIndex = len(player.Potions) + len(Pages[CurrentPage])
+        if TargetOption > ExitIndex: TargetOption = ExitIndex
         SideText = Engine.Text("")
         SideText.append("Potions: \n")
         for index, name in enumerate(player.Potions):
@@ -384,8 +410,8 @@ def ShowInventory():  #TODO ADD PAGES TO INVENTORY/SHOP SO ITEMS WON'T GO BEYOND
                 TargetItem = name
             else: SideText.append("%s - %s\n" % (name,player.Potions[name]))
         SideText.append("\nItems: \n")
-        if len(player.Inventory) > 0:
-            for index, ItemObject in enumerate(player.Inventory):
+        if len(Pages[CurrentPage]) > 0:
+            for index, ItemObject in enumerate(Pages[CurrentPage]):
                 if index+len(player.Potions) == TargetOption: 
                     SideText.append("> %s \n" % ItemObject.name ,style="u %s" %HIGH_LIGHT_COLOR)
                     TargetItem = ItemObject.name
@@ -398,15 +424,21 @@ def ShowInventory():  #TODO ADD PAGES TO INVENTORY/SHOP SO ITEMS WON'T GO BEYOND
         if ItemStats != None: Engine.layout['Main'].update(Engine.Panel(ItemStats.ShowStats(),title="Player",style="%s" %PANEL_COLOR))
         else: Engine.layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
 
-        Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
+        Engine.layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage+1}/{len(Pages)}",style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'w' :
+            case Key.KEY_w | Key.KEY_Aup :
                 TargetOption -= 1
-                if TargetOption < 0: TargetOption = ExitIndex
-            case 's' :
+                if TargetOption < 0 : TargetOption = ExitIndex
+            case Key.KEY_s | Key.KEY_Adown :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
-            case '\r' | ' ':
+            case Key.KEY_a | Key.KEY_Aleft :
+                CurrentPage -= 1
+                if CurrentPage < 0 : CurrentPage = len(Pages)-1
+            case Key.KEY_d | Key.KEY_Aright :
+                CurrentPage += 1
+                if CurrentPage > len(Pages)-1: CurrentPage = 0
+            case Key.KEY_enter | Key.KEY_space :
                 if TargetOption == ExitIndex: return
                 if TargetItem != None:
                     player.UsePotion(TargetItem)
@@ -433,13 +465,13 @@ def ShowEquipment():
 
         Engine.layout['Side'].update(Engine.Panel(EquipmentText,title="Equipement",style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'w' :
+            case Key.KEY_w | Key.KEY_Aup :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' :
+            case Key.KEY_s | Key.KEY_Adown :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
-            case '\r' | ' ':
+            case Key.KEY_enter | Key.KEY_space :
                 if TargetOption == ExitIndex: return
                 if TargetItem != None:
                     Engine.layout['Side'].update(Engine.Panel(player.RemoveEquipment(TargetItem),title="Equipement",style="%s" %PANEL_COLOR))
@@ -459,13 +491,13 @@ def ChooseCharacter():
 
         Engine.layout['Main'].update(Engine.Panel(text,title="Character Select",style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'w' :
+            case Key.KEY_w | Key.KEY_Aup :
                 TargetCharacter -= 1
                 if TargetCharacter < 0: TargetCharacter = ExitIndex
-            case 's' :
+            case Key.KEY_s | Key.KEY_Adown :
                 TargetCharacter += 1
                 if TargetCharacter > ExitIndex: TargetCharacter = 0
-            case '\r' | ' ':
+            case Key.KEY_enter | Key.KEY_space :
                 if TargetCharacter == ExitIndex: return False
 
                 if TargetCharacter in range(len(CharacterClass.Classes)+1):
@@ -510,13 +542,13 @@ def Fight(Monster):
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Fight",style="%s" %PANEL_COLOR))
 
         match Game.get_input():
-            case 'w' :
+            case Key.KEY_w | Key.KEY_Aup :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' :
+            case Key.KEY_s | Key.KEY_Adown :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
-            case '\r' | ' ':
+            case Key.KEY_enter | Key.KEY_space :
                 match TargetOption:
                     case 0:
                         SideText = Engine.Text("")
@@ -581,13 +613,13 @@ def NextTurn():
             
             Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(SideText,AnswerText,justify="center"),style="%s" %PANEL_COLOR))
             match Game.get_input():
-                case 'w' :
+                case Key.KEY_w | Key.KEY_Aup :
                     TargetOption -= 1
                     if TargetOption < 0: TargetOption = 1
-                case 's' :
+                case Key.KEY_s | Key.KEY_Adown :
                     TargetOption += 1
                     if TargetOption > 1: TargetOption = 0
-                case "\r" | " ":
+                case Key.KEY_enter | Key.KEY_space :
                     if TargetOption == 0:
                         Fight(RandomEnemy)
                         return
@@ -628,13 +660,13 @@ def Play():
 
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Game",style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'w' :
+            case Key.KEY_w | Key.KEY_Aup :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' :
+            case Key.KEY_s | Key.KEY_Adown :
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
-            case '\r' | ' ':
+            case Key.KEY_enter | Key.KEY_space :
                 match TargetOption:
                     case 0:
                         AutoSave()
@@ -659,13 +691,13 @@ def Play():
                             else: answerText.append("Yes/No").stylize("u %s" %HIGH_LIGHT_COLOR ,4)
                             Engine.layout['Side'].update(Engine.Panel(Engine.Text.assemble(text,answerText,justify='center'),style="%s" %PANEL_COLOR))
                             match Game.get_input():
-                                case 'w' :
+                                case Key.KEY_w | Key.KEY_Aup :
                                     answer -= 1
                                     if answer < 0: answer = 1
-                                case 's' :
+                                case Key.KEY_s | Key.KEY_Adown :
                                     answer += 1
                                     if answer > 1: answer = 0
-                                case '\r' | ' ':
+                                case Key.KEY_enter | Key.KEY_space :
                                     match answer:
                                         case 0:
                                             Engine.layout['Side'].update(Engine.Panel(Engine.Text("Type a save file name",justify='center'),style="%s" %PANEL_COLOR))
@@ -708,13 +740,13 @@ def Menu():
 
         Engine.layout['Main'].update(Engine.Panel(MainText,title="Menu" ,style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'w' | "\r'P'":
+            case Key.KEY_w | Key.KEY_Aup :
                 TargetOption -= 1
                 if TargetOption < 0: TargetOption = ExitIndex
-            case 's' :
+            case Key.KEY_s | Key.KEY_Adown:
                 TargetOption += 1
                 if TargetOption > ExitIndex: TargetOption = 0
-            case '\r' | ' ':
+            case Key.KEY_enter | Key.KEY_space :
                 match TargetOption:
                     case 0:
                         if ChooseCharacter():
@@ -732,14 +764,14 @@ def Menu():
 
 def DeveloperInfoMenu():
     text = Engine.Text("")
-    text.append("Development info\n\n",style="cyan")
+    text.append("Development info\n",style="cyan")
     text.append("Game Roadmap:\n",style="deep_sky_blue4")
-    text.append("1.Add shops and currency\n2.Balance current gameplay\n3.Add more Items and Monsters\n")
-    text.append("4.Add Leveling system and exp gathering from fights\n5.Expand loot tables and refactor it's code\n\n")
+    text.append("1.Add Merchants\n2.Add speed statistic which allow for:\n- Higher escape chance from monsters\n- Chance to not get hit by a monster")
+    text.append("3.Balance current gameplay\n4.Add more Items and Monsters\n")
+    text.append("5.Add Leveling system and exp gathering from fights\n")
     text.append("Change Log:\n",style="spring_green4")
-    text.append("Changed the game to work with the new GUI\nfixed some crashes\nfor now removed selling items and gold\n\n")
-    text.append("Currently adding shops(shop is done) and merchants\nMerchants you will be able to encounter in the wilderness.")
-    text.append("They can sell you some really good items but they are really rare\n\n")
+    text.append("Changed the game to work with the new GUI\nReworked game input\nChanged Default font and screen size\n")
+    text.append("Currently adding merchants and Thief events.\n")
     text.append('Press any button to continue',style="blink bright_black")
     return text
 
@@ -747,6 +779,7 @@ def DeveloperInfoMenu():
 if __name__ == '__main__':
     with Engine.Live(Engine.layout,refresh_per_second=60,screen=True) as live:
         Menu()
+    FontSize.run(16)
 
 
 '''

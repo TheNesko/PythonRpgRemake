@@ -9,6 +9,19 @@ from rich.panel import Panel
 from rich.console import Console
 from rich.theme import Theme
 
+class Key:
+    KEY_tab = 9
+    KEY_space = 32
+    KEY_enter = 13
+    KEY_a = 97
+    KEY_s = 115
+    KEY_d = 100
+    KEY_w = 119
+    KEY_Aup = 4401
+    KEY_Adown = 4402
+    KEY_Aright = 4403
+    KEY_Aleft = 4404
+
 
 class Game:
     @staticmethod
@@ -20,8 +33,18 @@ class Game:
 
     @staticmethod
     def get_input():
-        answer = msvcrt.getwch()
-        return answer.lower()
+        ky = msvcrt.getch()
+        if ky in [b'\x00', b'\xe0']:
+            ky = msvcrt.getch()
+            if ky == b'H':
+                return 4401
+            if ky == b'P':
+                return 4402
+            if ky == b'M':
+                return 4403
+            if ky == b'K':
+                return 4404
+        return ord(ky)
 
     @staticmethod
     def wait_for_input():
