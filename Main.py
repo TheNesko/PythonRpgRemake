@@ -337,7 +337,7 @@ def GenerateItemsSelled():
         if isActive == False: SelledItems.append(item)
     return SelledItems
 
-def Shop(SelledItems):
+def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS BUT WITH THE CHANGED USE FUNCTION
     ActiveWindow = 0  # 0-inventory  1-shop
     TargetOption = 0
     ShopItems = SelledItems
