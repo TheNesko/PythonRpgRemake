@@ -51,8 +51,15 @@ class Item:
         Engine.Game.wait_for_input()
     
     def ShowStats(self):
+        ClassUse = ""
+        if len(self.ClassUse) > 0:
+            for x in self.ClassUse:
+                if ClassUse == "": ClassUse += f"{x.Name} "
+                else: ClassUse += f", {x.Name} "
+        else: ClassUse = "All classes"
+
         text = Engine.Text(
-            f"Name: {self.name}\nPrice: {self.Price}\nEquip Place: {self.EquipPlace}\nBonuses:\nHealth = {self.MaxHealth}\nDamage = {self.Damage}\nDefence = {self.Defence}"
+            f"Name: {self.name}\nPrice: {self.Price} Gold\nEquip Place: {self.EquipPlace}\nClass use: {ClassUse}\nBonuses:\n Health = {self.MaxHealth}\n Damage = {self.Damage}\n Defence = {self.Defence}"
         )
         return text
 
