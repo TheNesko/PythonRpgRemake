@@ -10,13 +10,16 @@ from rich.console import Console
 from rich.theme import Theme
 
 class Key:
+    KEY_del = 4301
     KEY_tab = 9
     KEY_space = 32
     KEY_enter = 13
     KEY_a = 97
-    KEY_s = 115
     KEY_d = 100
+    KEY_n = 110
+    KEY_s = 115
     KEY_w = 119
+    KEY_y = 121
     KEY_Aup = 4401
     KEY_Adown = 4402
     KEY_Aright = 4403
@@ -36,6 +39,8 @@ class Game:
         ky = msvcrt.getch()
         if ky in [b'\x00', b'\xe0']:
             ky = msvcrt.getch()
+            if ky == b'S':
+                return 4301
             if ky == b'H':
                 return 4401
             if ky == b'P':

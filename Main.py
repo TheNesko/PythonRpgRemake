@@ -217,14 +217,14 @@ player = Player()
 
 
 def SavesMenu():
-    saves = []
-    for file in os.listdir(SaveFilePath):
-        filename = os.fsdecode(file)
-        if filename.endswith(".json"): 
-            saves.append(file)
     Target = 0
-    ExitIndex = len(saves)
     while True:
+        saves = []
+        for file in os.listdir(SaveFilePath):
+            filename = os.fsdecode(file)
+            if filename.endswith(".json"): 
+                saves.append(file)
+        ExitIndex = len(saves)
         MainText = Engine.Text("")
         SideText = Engine.Text("")
         MainText.append("Found %s save files" %len(saves)).stylize(HIGH_LIGHT_COLOR,6,8)
@@ -249,6 +249,8 @@ def SavesMenu():
                 if Target == ExitIndex: return False
                 if Load(str(saves[Target]).split(".json")[0]) == 0: return False
                 return True
+            case Key.KEY_del :
+                os.remove(f"{SaveFilePath}\{saves[Target]}")
 
 def AutoSave():
     if player.CurrentSaveFileName != "":
@@ -301,7 +303,11 @@ def Load(SaveName:str):
     if data['GameVersion'] != GameVersion:
         layout['Side'].update(Engine.Panel(Engine.Text("Save game version is diffrent form curent version\nLoad? Y/N"),style="%s" %PANEL_COLOR))
         match Game.get_input():
-            case 'n':
+            case Key.KEY_y:
+                pass
+            case Key.KEY_n:
+                return 0
+            case _:
                 return 0
     player.SetAllStats(data['Player'],data["PlayerClass"])
     player.Gold = data['Inventory']['Gold']
