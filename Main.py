@@ -61,7 +61,7 @@ class Player:
         self.EquipmentDefence = 0
         self.EquipmentSpeed = 0
         self.CurrentSaveFileName = None
-    
+
     def UseItem(self,Name):
         if len(player.Inventory) <= 0: return
         for x in player.Inventory:
@@ -529,6 +529,9 @@ def CalculateDamage(Damage:int,Defence:int):
     reduction = 1+Defence/100
     result = Damage/reduction
     return int(result)
+
+def CalculateEvadeChance(speed):
+    return round(1.4*speed**0.7)
 
 def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE FUNCTION IS READY IN '''TEST.PY'''
     Engine.layout['Side'].update(Engine.Panel(GameNamePrint(),style="%s" %PANEL_COLOR))

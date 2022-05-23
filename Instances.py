@@ -118,13 +118,14 @@ class Monster:
 
     MonsterBase = []
 
-    def __init__(self,Name:str,MaxHealth:int,Attack:int,Defence:int,LootTable=None):
+    def __init__(self,Name:str,MaxHealth:int,Attack:int,Defence:int,Speed:int,LootTable=None):
         self.name = Name
         self.Stats = {
             'Health' : MaxHealth,
             'MaxHealth' : MaxHealth,
             'Attack' : Attack,
-            'Defence' : Defence
+            'Defence' : Defence,
+            'Speed' : Speed
         }
         self.LootTable = LootTable
         Monster.MonsterBase.append(self)
@@ -242,9 +243,9 @@ WraithLoot.addLoot(MagicTome,8)
 WraithLoot.addLoot(MagicOrb,5)
 WraithLoot.addLoot(None,100)
 
-Zombie = Monster('Zombie',60,15,20,ZombieLoot)
-Warewolf = Monster("Warewolf",50,20,20,WarewolfLoot)
-Skeleton = Monster('Skeleton',45,10,10,SkeletonLoot)
-Ghost = Monster('Ghost',15,5,500,GhostLoot)
-Thief = Monster('Thief',25,10,5,ThiefLoot)
-Wraith = Monster('Wraith',100,15,5,WraithLoot)
+Zombie = Monster('Zombie', 60, 15, 20, 10, ZombieLoot)
+Warewolf = Monster("Warewolf", 50, 20, 20, 20, WarewolfLoot)
+Skeleton = Monster('Skeleton', 45, 10, 10, 30, SkeletonLoot)
+Ghost = Monster('Ghost', 15, 5, 500, 0, GhostLoot)
+Thief = Monster('Thief', 25, 10, 5, 80, ThiefLoot)
+Wraith = Monster('Wraith', 100, 15, 5, 30, WraithLoot)
