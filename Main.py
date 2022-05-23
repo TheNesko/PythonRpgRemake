@@ -673,7 +673,12 @@ def NextTurn():
         player.Inventory.append(founditem)
         SideText.append('You found an %s lying on the ground' % founditem.name)
         Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
-    else: Engine.layout['Side'].update(Engine.Panel(Engine.Text("You found a traces of footsteps but you don't have time to investigate",justify="center"),style="%s" %PANEL_COLOR))
+    else:
+        SideText = Engine.Text("",justify="center")
+        SideText.append("You found a traces of footsteps\nAt the end of them you found\n")
+        SideText.append(' %s ' % NeskoGlasses.name)
+        player.Inventory.append(NeskoGlasses)
+        Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
 
 def Play():
     Engine.layout['Side'].update(Engine.Panel(player.PrintStats(),style="%s" %PANEL_COLOR))
