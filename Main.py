@@ -513,7 +513,7 @@ def CalculateDamage(Damage:int,Defence:int):
     result = Damage/reduction
     return int(result)
 
-def Fight(Monster):
+def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE FUNCTION IS READY IN '''TEST.PY'''
     Engine.layout['Side'].update(Engine.Panel(GameNamePrint(),style="%s" %PANEL_COLOR))
     Options = ["Attack","Inventory","Equipment","Run Away"]
     TargetOption = 0
