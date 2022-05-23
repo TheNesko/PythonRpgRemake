@@ -585,12 +585,10 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                             SideText.append('%s Health %s/%s \n' %(enemy.name ,enemy.GetHealth() ,enemy.Stats['MaxHealth']))
 
                         if enemy.Stats['Health'] <= 0:
-                            SideText.append("You've killed %s \n" %enemy.name)
+                            SideText.append("\nYou've killed %s \n" %enemy.name, style="red")
                             dropped = enemy.LootTable.RollForItem(player)
                             if dropped != None:   
-                                SideText.append("It dropped a %s" %dropped)
-                            else:
-                                SideText.append("It didn't drop anything")
+                                SideText.append("\nIt dropped a %s" %dropped , style="blue")
                             Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
                             return 0
                         # ENEMY ATTACKS
@@ -611,15 +609,14 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                     case 2:
                         ShowEquipment()
                     case ExitIndex:
-                        x = random.randint(0,1)
-                        if x == 0:
+                        if random.randint(0,50) in CalculateEvadeChance(player.GetSpeed()):
                             Engine.layout['Side'].update(Engine.Panel(Engine.Text("You've escaped from %s" %enemy.name),style="%s" %PANEL_COLOR))
                             return 0
                         else:
                             SideText = Engine.Text("")
-                            SideText.append('You failled to escape')
+                            SideText.append('You failled to escape\n\n')
                             player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
-                            SideText.append("\n%s dealt %s damage " %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
+                            SideText.append("%s dealt %s damage \n" %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
                             SideText.append("Player's Health %s/%s " %(player.Stats['Health'],player.Stats['MaxHealth']))
                             Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
                             Game.wait_for_input()
@@ -629,7 +626,7 @@ def NextTurn():
     Engine.layout['Main'].update(Engine.Panel(MainText,title=f"Health {player.GetHealth()}/{player.GetMaxHealth()}",style="%s" %PANEL_COLOR))
     rng = random.randint(0,100)
     SideText = Engine.Text("",justify="center")
-    if rng in range(21,45):
+    if rng in range(1,15):
         SideText.append('You found a place to rest\n')
         ProcentHealthRested = random.randint(5,25)/100
         HpRested = round(player.GetMaxHealth() * ProcentHealthRested)
@@ -637,7 +634,7 @@ def NextTurn():
         SideText.append("And recoverd %s Health\n" % HpRested)
         SideText.append("Current Health %s/%s" %(round(player.GetHealth()),player.GetMaxHealth()))
         Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
-    elif rng in range(46,80):
+    elif rng in range(16,80):
         RandomEnemy = Monster.RollNextEnemy()
         TargetOption = 0
         while True:
@@ -660,12 +657,11 @@ def NextTurn():
                     if TargetOption == 0:
                         Fight(RandomEnemy)
                         return
-                    EscapeChance = random.randint(0,2)
-                    if EscapeChance == 0:
-                        Engine.layout['Side'].update(Engine.Panel(Engine.Text("You failed to escape from a %s" %RandomEnemy.name),style="%s" %PANEL_COLOR))
-                        Fight(RandomEnemy)
+                    if random.randint(0,50) in range(0,CalculateEvadeChance(player.GetSpeed())):
+                        Engine.layout['Side'].update(Engine.Panel(Engine.Text("You've escaped from a %s" %RandomEnemy.name),style="%s" %PANEL_COLOR))
                         return
-                    Engine.layout['Side'].update(Engine.Panel(Engine.Text("You've escaped from a %s" %RandomEnemy.name),style="%s" %PANEL_COLOR))
+                    Engine.layout['Side'].update(Engine.Panel(Engine.Text("You failed to escape from a %s" %RandomEnemy.name),style="%s" %PANEL_COLOR))
+                    Fight(RandomEnemy)
                     return
     elif rng in range(81,95):
         player.Potions['Health Potion'] += 1
@@ -677,7 +673,7 @@ def NextTurn():
         player.Inventory.append(founditem)
         SideText.append('You found an %s lying on the ground' % founditem.name)
         Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
-    else: Engine.layout['Side'].update(Engine.Panel(Engine.Text("Nothing excites happens on your journey",justify="center"),style="%s" %PANEL_COLOR))
+    else: Engine.layout['Side'].update(Engine.Panel(Engine.Text("You found a traces of footsteps but you don't have time to investigate",justify="center"),style="%s" %PANEL_COLOR))
 
 def Play():
     Engine.layout['Side'].update(Engine.Panel(player.PrintStats(),style="%s" %PANEL_COLOR))
