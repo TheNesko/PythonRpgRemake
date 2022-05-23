@@ -546,7 +546,7 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
     layout['Side'].update(Engine.Panel(GameNamePrint(),style="%s" %PANEL_COLOR))
     Options = ["Attack","Inventory","Equipment","Run Away"]
     TargetOption = 0
-    ExitIndex = len(Options)
+    ExitIndex = len(Options)-1
     enemy = Monster
     enemy.SetMaxHealth()
     while True:
@@ -606,7 +606,7 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                             SideText.append("Player's Health %s/%s \n" %(player.Stats['Health'],player.Stats['MaxHealth']))
                         else:
                             player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
-                            SideText.append("\n%s dealt %s damage \n" %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
+                            SideText.append("%s dealt %s damage \n" %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
                             SideText.append("Player's Health %s/%s \n" %(player.Stats['Health'],player.Stats['MaxHealth']))
                         
                         layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
@@ -633,7 +633,7 @@ def NextTurn():
     layout['Main'].update(Engine.Panel(MainText,title=f"Health {player.GetHealth()}/{player.GetMaxHealth()}",style="%s" %PANEL_COLOR))
     rng = random.randint(0,100)
     SideText = Engine.Text("",justify="center")
-    if rng in range(0,15):
+    if rng in range(-1,15):
         SideText.append('You found a place to rest\n')
         ProcentHealthRested = random.randint(5,25)/100
         HpRested = round(player.GetMaxHealth() * ProcentHealthRested)
@@ -675,7 +675,7 @@ def NextTurn():
         player.Potions['Health Potion'] += 1
         SideText.append('Wow! you found a\nHealing potion\nYou now have %s' % player.Potions['Health Potion']).stylize("green",17,31)
         layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
-    elif rng in range(96,100):
+    elif rng in range(96,101):
         rngItem = random.randint(0,len(Item.ItemBase)-1)
         founditem = Item.ItemBase[rngItem]
         player.Inventory.append(founditem)
