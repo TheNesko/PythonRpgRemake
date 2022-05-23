@@ -160,9 +160,9 @@ class CharacterClass:
         }
         CharacterClass.Classes.append(self)
 
-WarriorClass = CharacterClass('Warrior', 120, 30, 20, 20)
-RangerClass = CharacterClass('Ranger', 100, 25, 10, 40)
-MageClass = CharacterClass('Mage', 70, 40, 5, 30)
+WarriorClass = CharacterClass('Warrior', 80, 30, 40, 20)
+RangerClass = CharacterClass('Ranger', 60, 25, 20, 50)
+MageClass = CharacterClass('Mage', 60, 40, 10, 30)
 TitanClass = CharacterClass('Titan', 1000, 1000, 1000, 100)
 
 #---Leather---
