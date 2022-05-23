@@ -34,9 +34,7 @@ class Item:
                 ClassesToCheck -= 1
                 if ClassesToCheck == 0:
                     SideText.append("%s is not for your class : %s" % (self.name, player.Class))
-                    Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %Main.PANEL_COLOR))
-                    Engine.Game.wait_for_input()
-                    return
+                    return SideText
         if player.Equiped[self.EquipPlace] == None:
             player.Equiped[self.EquipPlace] = self.name
             player.Inventory.remove(self)
@@ -48,8 +46,8 @@ class Item:
             player.Inventory.remove(self)
         player.ResetStatsFromEquipment()
         player.AddStatsFromEquipment()
-        Engine.layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %Main.PANEL_COLOR))
-        Engine.Game.wait_for_input()
+        return SideText
+
     
     def ShowStats(self):
         ClassUse = ""

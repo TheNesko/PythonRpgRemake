@@ -66,9 +66,10 @@ class Player:
         if len(player.Inventory) <= 0: return
         for x in player.Inventory:
             if Name == x.name:
-                x.Use(self)
+                layout["Side"].update(Engine.Panel(x.Use(self),title="Inventory")) 
                 break
         self.RecalculateStatsFromEquipment()
+        Game.wait_for_input()
     
     def SellItem(self,Item):
         if len(self.Inventory) <= 0: return False
