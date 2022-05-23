@@ -8,7 +8,7 @@ from Instances import *
 
 #----Window-Setup-----#
 Game.disable_quickedit()
-Game.window('Game',50,30)
+Game.window('Game',50,35)
 #Set font size to 20
 FontSize.run(22)
 
@@ -157,6 +157,7 @@ class Player:
                 self.EquipmentMaxHealth += item.MaxHealth
                 self.EquipmentAttack += item.Damage
                 self.EquipmentDefence += item.Defence
+                self.EquipmentSpeed += item.Speed
         player.SetMaxHealth(player.Stats['MaxHealth'] + self.EquipmentMaxHealth)
         player.SetAttack(player.Stats['Attack'] + self.EquipmentAttack)
         player.SetDefence(player.Stats['Defence'] + self.EquipmentDefence)
@@ -531,7 +532,8 @@ def CalculateDamage(Damage:int,Defence:int):
     return int(result)
 
 def CalculateEvadeChance(speed):
-    return round(1.4*speed**0.7)
+    if speed == 0: speed = 1
+    return round(1.4*speed**0.7)+1
 
 def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE FUNCTION IS READY IN '''TEST.PY'''
     Engine.layout['Side'].update(Engine.Panel(GameNamePrint(),style="%s" %PANEL_COLOR))
@@ -572,9 +574,16 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                 match TargetOption:
                     case 0:
                         SideText = Engine.Text("")
-                        SideText.append("You've dealt %s damage \n" %CalculateDamage(player.GetAttack() ,enemy.Stats['Defence']))
-                        enemy.SetHealth(enemy.GetHealth() - CalculateDamage(player.GetAttack() ,enemy.Stats['Defence']))
-                        SideText.append('%s Health %s/%s \n' %(enemy.name ,enemy.GetHealth() ,enemy.Stats['MaxHealth']))
+                        # PLAYER ATTACKS
+                        if random.randint(0,100) in range(0,CalculateEvadeChance(enemy.Stats['Speed'])):
+                            # ENEMY DODGED THE ATTACK
+                            SideText.append("%s have dodged your attack \n" %enemy.name)
+                            SideText.append('%s Health %s/%s \n' %(enemy.name ,enemy.GetHealth() ,enemy.Stats['MaxHealth']))
+                        else:
+                            SideText.append("You've dealt %s damage \n" %CalculateDamage(player.GetAttack() ,enemy.Stats['Defence']))
+                            enemy.SetHealth(enemy.GetHealth() - CalculateDamage(player.GetAttack() ,enemy.Stats['Defence']))
+                            SideText.append('%s Health %s/%s \n' %(enemy.name ,enemy.GetHealth() ,enemy.Stats['MaxHealth']))
+
                         if enemy.Stats['Health'] <= 0:
                             SideText.append("You've killed %s \n" %enemy.name)
                             dropped = enemy.LootTable.RollForItem(player)
@@ -584,11 +593,19 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                                 SideText.append("It didn't drop anything")
                             Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
                             return 0
-                        player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
-                        SideText.append("\n%s dealt %s damage \n" %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
-                        SideText.append("Player's Health %s/%s \n" %(player.Stats['Health'],player.Stats['MaxHealth']))
-                        Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
-                        Game.wait_for_input()
+                        # ENEMY ATTACKS
+                        if random.randint(0,100) in range(0,CalculateEvadeChance(player.GetSpeed())):
+                            # PLATER DODGED THE ATTACK
+                            SideText.append("You've dodged the attack \n")
+                            SideText.append("Player's Health %s/%s \n" %(player.Stats['Health'],player.Stats['MaxHealth']))
+                            Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
+                            Game.wait_for_input()
+                        else:
+                            player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
+                            SideText.append("\n%s dealt %s damage \n" %(enemy.name,CalculateDamage(enemy.Stats['Attack'],player.GetDefence())))
+                            SideText.append("Player's Health %s/%s \n" %(player.Stats['Health'],player.Stats['MaxHealth']))
+                            Engine.layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
+                            Game.wait_for_input()
                     case 1:
                         ShowInventory()
                     case 2:
