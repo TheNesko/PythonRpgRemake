@@ -189,7 +189,7 @@ MagicTome = Item('Magic Tome', 50, 10, 0, 0, 5, 'LeftHand', [MageClass])
 MagicOrb = Item('Magic Orb', 120, 20, 0, 0, 0, 'LeftHand', [MageClass])
 #---Other---
 Chainmail = Item('Chainmail', 35, 0, 10, 5, -5, 'Chestplate', [RangerClass,WarriorClass])
-NeskoGlasses = Item("Nesko's Glasses", 0, 20, 20, 20, 69, "Helmet")
+NeskoGlasses = Item("Nesko's Glasses", 420, 0, 6, 9, 69, "Helmet")
 
 #--LOOT-TABLES-
 #----Common----

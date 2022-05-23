@@ -67,9 +67,9 @@ class Player:
         for x in player.Inventory:
             if Name == x.name:
                 layout["Side"].update(Engine.Panel(x.Use(self),title="Inventory")) 
+                self.RecalculateStatsFromEquipment()
+                Game.wait_for_input()
                 break
-        self.RecalculateStatsFromEquipment()
-        Game.wait_for_input()
     
     def SellItem(self,Item):
         if len(self.Inventory) <= 0: return False
@@ -107,18 +107,18 @@ class Player:
                     layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
                     Game.wait_for_input()
                     return
-                if self.GetHealth() >= self.GetMaxHealth(): return
-                self.Potions[Name] -= 1
-                HealthBefore = round(player.GetHealth())
-                Heal = round(player.GetMaxHealth() * self.PotionHealProcent)
-                player.SetHealth(player.GetHealth() + Heal)
-                HealthAfter = round(player.GetHealth())
-                HealValue = HealthAfter - HealthBefore
-                SideText.append("You've used a Health Potion\n")
-                SideText.append("It healed you for %s \n" %HealValue)
-                SideText.append("Current health %s/%s \n" %(round(player.GetHealth()),player.GetMaxHealth()))
-                layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
-                Game.wait_for_input()
+                if self.GetHealth() < self.GetMaxHealth():
+                    self.Potions[Name] -= 1
+                    HealthBefore = round(player.GetHealth())
+                    Heal = round(player.GetMaxHealth() * self.PotionHealProcent)
+                    player.SetHealth(player.GetHealth() + Heal)
+                    HealthAfter = round(player.GetHealth())
+                    HealValue = HealthAfter - HealthBefore
+                    SideText.append("You've used a Health Potion\n")
+                    SideText.append("It healed you for %s \n" %HealValue)
+                    SideText.append("Current health %s/%s \n" %(round(player.GetHealth()),player.GetMaxHealth()))
+                    layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
+                    Game.wait_for_input()
     
     def SetAllStats(self,NewStats,NewClass):
         self.Class = NewClass
@@ -357,7 +357,7 @@ def Shop(SelledItems):
         ShopText = Engine.Text()
         SideText = Engine.Text()
         if ActiveWindow == 0: ExitIndex = len(Pages[CurrentPage])
-        else: ExitIndex = len(ShopItems)
+        else: ExitIndex = len(ShopItems)+1
         if TargetOption > ExitIndex: TargetOption = ExitIndex
         if len(Pages[CurrentPage]) > 0:
             for index, Item in enumerate(Pages[CurrentPage]):
@@ -368,18 +368,24 @@ def Shop(SelledItems):
         if TargetOption == ExitIndex and ActiveWindow == 0: SideText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
         else: SideText.append("Go back \n")
 
+        if TargetOption == 0 and ActiveWindow == 1:
+            ShopText.append("> Health Potion\n" ,style="u %s" %HIGH_LIGHT_COLOR)
+            TargetItem = "Health Potion"
+        else: ShopText.append("Health Potion\n")
+
         for index, Item in enumerate(ShopItems):
-            if index == TargetOption and ActiveWindow == 1: 
+            if index+1 == TargetOption and ActiveWindow == 1: 
                 ShopText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
                 TargetItem = Item
             else: ShopText.append("%s \n" % Item.name)
         if TargetOption == ExitIndex and ActiveWindow == 1: ShopText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
         else: ShopText.append("Go back \n")
         
-        if TargetItem != None: layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
+        if TargetItem == "Health Potion": layout['Main'].update(Engine.Panel(Engine.Text("Health Potion\nPrice: 10 Gold"),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
+        elif TargetItem != None: layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
         else: layout['Main'].update(Engine.Panel(player.PrintStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
 
-        layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage}",style="%s" %PANEL_COLOR))
+        layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage+1}/{len(Pages)}" if len(Pages) > 1 else "Inventory",style="%s" %PANEL_COLOR))
         layout['Shop'].update(Engine.Panel(ShopText,title="Shop",style="%s" %PANEL_COLOR))
         match Game.get_input():
             case Key.KEY_w | Key.KEY_Aup :
@@ -408,7 +414,11 @@ def Shop(SelledItems):
                         if player.SellItem(TargetItem) == True:
                             ShopItems.append(TargetItem)
                     if ActiveWindow == 1:
-                        if player.BuyItem(TargetItem) == True:
+                        if TargetItem == "Health Potion":
+                            if player.Gold >= 10:
+                                player.Gold -= 10
+                                player.Potions["Health Potion"] += 1
+                        elif player.BuyItem(TargetItem) == True:
                             ShopItems.remove(TargetItem)
 
 def ShowInventory(): 
@@ -449,7 +459,7 @@ def ShowInventory():
         if ItemStats != None: layout['Main'].update(Engine.Panel(ItemStats.ShowStats(),title="Player",style="%s" %PANEL_COLOR))
         else: layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
 
-        layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage+1}/{len(Pages)}",style="%s" %PANEL_COLOR))
+        layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage+1}/{len(Pages)}" if len(Pages) > 1 else "Inventory",style="%s" %PANEL_COLOR))
         match Game.get_input():
             case Key.KEY_w | Key.KEY_Aup :
                 TargetOption -= 1
@@ -585,7 +595,7 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                         # PLAYER ATTACKS
                         if random.randint(0,100) in range(0,CalculateEvadeChance(enemy.Stats['Speed'])):
                             # ENEMY DODGED THE ATTACK
-                            SideText.append("%s have dodged your attack \n" %enemy.name)
+                            SideText.append("%s dodged your attack \n" %enemy.name,style="red")
                             SideText.append('%s Health %s/%s \n\n' %(enemy.name ,enemy.GetHealth() ,enemy.Stats['MaxHealth']))
                         else:
                             SideText.append("You've dealt %s damage \n" %CalculateDamage(player.GetAttack() ,enemy.Stats['Defence']))
@@ -602,7 +612,7 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                         # ENEMY ATTACKS
                         if random.randint(0,100) in range(0,CalculateEvadeChance(player.GetSpeed())):
                             # PLATER DODGED THE ATTACK
-                            SideText.append("You've dodged the attack \n")
+                            SideText.append("You've dodged the attack \n",style="green")
                             SideText.append("Player's Health %s/%s \n" %(player.Stats['Health'],player.Stats['MaxHealth']))
                         else:
                             player.SetHealth(player.GetHealth()-CalculateDamage(enemy.Stats['Attack'],player.GetDefence()))
