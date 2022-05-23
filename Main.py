@@ -615,7 +615,7 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
                     case 2:
                         ShowEquipment()
                     case ExitIndex:
-                        if random.randint(0,50) in CalculateEvadeChance(player.GetSpeed()):
+                        if random.randint(0,50) in range(0,CalculateEvadeChance(player.GetSpeed())):
                             layout['Side'].update(Engine.Panel(Engine.Text("You've escaped from %s" %enemy.name),style="%s" %PANEL_COLOR))
                             return 0
                         else:
