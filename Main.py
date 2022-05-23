@@ -41,7 +41,8 @@ class Player:
             'Health' : 1,
             'MaxHealth' : 1,
             'Attack' : 1,
-            'Defence' : 1
+            'Defence' : 1,
+            'Speed' : 1
         }
         self.Gold = 0
         self.Inventory = []
@@ -58,6 +59,7 @@ class Player:
         self.EquipmentMaxHealth = 0
         self.EquipmentAttack = 0
         self.EquipmentDefence = 0
+        self.EquipmentSpeed = 0
         self.CurrentSaveFileName = None
     
     def UseItem(self,Name):
@@ -76,8 +78,6 @@ class Player:
                 self.Gold += x.Price
                 return True
         return False
-
-                
     
     def BuyItem(self,Item):
         if self.Gold >= Item.Price:
@@ -142,7 +142,8 @@ class Player:
         text.append("Class: %s \n" %self.Class)
         text.append("%s/%s Health \n" %(self.GetHealth(),self.GetMaxHealth()))
         text.append('%s Attack \n' %self.GetAttack())
-        text.append('%s Defence \n' %self.GetDefence(),)
+        text.append('%s Defence \n' %self.GetDefence())
+        text.append('%s Speed \n' %self.GetSpeed())
         return text
     
     def RecalculateStatsFromEquipment(self):
@@ -156,17 +157,20 @@ class Player:
                 self.EquipmentMaxHealth += item.MaxHealth
                 self.EquipmentAttack += item.Damage
                 self.EquipmentDefence += item.Defence
-        player.Stats['MaxHealth'] += self.EquipmentMaxHealth
-        player.Stats['Attack'] += self.EquipmentAttack
-        player.Stats['Defence'] += self.EquipmentDefence
+        player.SetMaxHealth(player.Stats['MaxHealth'] + self.EquipmentMaxHealth)
+        player.SetAttack(player.Stats['Attack'] + self.EquipmentAttack)
+        player.SetDefence(player.Stats['Defence'] + self.EquipmentDefence)
+        player.SetSpeed(player.Stats['Speed'] + self.EquipmentSpeed)
 
     def ResetStatsFromEquipment(self):
         player.Stats['MaxHealth'] -= self.EquipmentMaxHealth
         player.Stats['Attack'] -= self.EquipmentAttack
         player.Stats['Defence'] -= self.EquipmentDefence
+        player.Stats['Speed'] -= self.EquipmentSpeed
         self.EquipmentMaxHealth = 0
         self.EquipmentAttack = 0
         self.EquipmentDefence = 0
+        self.EquipmentSpeed = 0
     
     @staticmethod
     def Die():
@@ -177,26 +181,36 @@ class Player:
     
     def SetHealth(self,Value):
         self.Stats['Health'] = Value
-        if self.GetHealth() > self.GetMaxHealth(): self.SetHealth(self.GetMaxHealth())
-        if self.GetHealth() < 0: self.SetHealth(0)
+        if self.Stats['Health'] > self.Stats['MaxHealth']: self.Stats['Health'] = self.Stats['MaxHealth']
+        if self.Stats['Health'] < 0: self.SetHealth(0)
     
     def GetMaxHealth(self):
         return self.Stats['MaxHealth']
     
     def SetMaxHealth(self,Value):
         self.Stats['MaxHealth'] = Value
+        if self.Stats['MaxHealth'] < 0: self.Stats['MaxHealth'] = 0
     
     def GetAttack(self):
         return self.Stats['Attack']
     
     def SetAttack(self,Value):
         self.Stats['Attack'] = Value
+        if self.Stats['Attack'] < 0: self.Stats['Attack'] = 0
     
     def GetDefence(self):
         return self.Stats['Defence']
     
     def SetDefence(self,Value):
         self.Stats['Defence'] = Value
+        if self.Stats['Defence'] < 0: self.Stats['Defence'] = 0
+    
+    def GetSpeed(self):
+        return self.Stats['Speed']
+    
+    def SetSpeed(self,Value):
+        self.Stats['Speed'] = Value
+        if self.Stats["Speed"] < 0: self.Stats["Speed"] = 0
 
 player = Player()
 
@@ -250,7 +264,8 @@ def Save(SaveName:str):
             'Health' : player.GetHealth(),
             'MaxHealth' : player.GetMaxHealth(),
             'Attack' : player.GetAttack(),
-            'Defence' : player.GetDefence()
+            'Defence' : player.GetDefence(),
+            'Speed' : player.Stats['Speed']
         },
         "Inventory" : {
             'Gold' : player.Gold,
@@ -261,7 +276,8 @@ def Save(SaveName:str):
         "EquipmentBonus" : {
             "MaxHealth" : player.EquipmentMaxHealth,
             "Attack" : player.EquipmentAttack,
-            "Defence" : player.EquipmentDefence
+            "Defence" : player.EquipmentDefence,
+            "Speed" : player.EquipmentSpeed
         },
         "GameVersion": GameVersion
     }
@@ -293,6 +309,7 @@ def Load(SaveName:str):
     player.EquipmentMaxHealth = data['EquipmentBonus']["MaxHealth"]
     player.EquipmentAttack = data['EquipmentBonus']["Attack"]
     player.EquipmentDefence = data['EquipmentBonus']["Defence"]
+    player.EquipmentSpeed = data['EquipmentBonus']["Speed"]
     for x in data['Inventory']['Items']:
         for y in Item.ItemBase:
             if x == y.name:

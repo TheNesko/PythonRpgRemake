@@ -4,7 +4,7 @@ class Item:
 
     ItemBase = []
 
-    def __init__(self,Name:str,Price:int,Damage:int,Defence:int,MaxHealth:int,EquipPlace:str,ClassUse=[]):
+    def __init__(self,Name:str,Price:int,Damage:int,Defence:int,MaxHealth:int,Speed:int,EquipPlace:str,ClassUse=[]):
         '''
         Creates an Item that has basic properties like:
         - Price = Ammount of gold that this item can be sold with
@@ -19,6 +19,7 @@ class Item:
         self.Damage = Damage
         self.Defence = Defence
         self.MaxHealth = MaxHealth
+        self.Speed = Speed
         self.EquipPlace = EquipPlace
         self.ClassUse = ClassUse
         Item.ItemBase.append(self)
@@ -58,9 +59,8 @@ class Item:
                 else: ClassUse += f", {x.Name} "
         else: ClassUse = "All classes"
 
-        text = Engine.Text(
-            f"Name: {self.name}\nPrice: {self.Price} Gold\nEquip Place: {self.EquipPlace}\nClass use: {ClassUse}\nBonuses:\n Health = {self.MaxHealth}\n Damage = {self.Damage}\n Defence = {self.Defence}"
-        )
+        text = Engine.Text(f"Name: {self.name}\nPrice: {self.Price} Gold\nEquip Place: {self.EquipPlace}\nClass use: {ClassUse}\n")
+        text.append(f"Bonuses:\n Health = {self.MaxHealth}\n Damage = {self.Damage}\n Defence = {self.Defence}\n Speed = {self.Speed}")
         return text
 
     def FindItem(ItemName):
@@ -149,45 +149,46 @@ class CharacterClass:
 
     Classes = []
 
-    def __init__(self,Name:str,MaxHealth:int,Attack:int,Defence:int):
+    def __init__(self,Name:str=10,MaxHealth:int=10,Attack:int=10,Defence:int=10,Speed:int=10):
         self.Name = Name
         self.Stats = {
             'Health' : MaxHealth,
             'MaxHealth' : MaxHealth,
             'Attack' : Attack,
-            'Defence' : Defence
+            'Defence' : Defence,
+            'Speed' : Speed
         }
         CharacterClass.Classes.append(self)
 
-WarriorClass = CharacterClass('Warrior',120,30,20)
-RangerClass = CharacterClass('Ranger',100,25,10)
-MageClass = CharacterClass('Mage',70,40,5)
-TitanClass = CharacterClass('Titan',1000,1000,1000)
+WarriorClass = CharacterClass('Warrior', 120, 30, 20, 20)
+RangerClass = CharacterClass('Ranger', 100, 25, 10, 40)
+MageClass = CharacterClass('Mage', 70, 40, 5, 30)
+TitanClass = CharacterClass('Titan', 1000, 1000, 1000, 100)
 
 #---Leather---
-LeatherHelmet = Item('Leather Helmet',15,0,5,0,'Helmet')
-LeatherChestplate = Item('Leather Chestplate',25,0,7,5,'Chestplate')
-LeatherLeggins = Item('Leather Leggins',15,0,5,0,'Leggins')
-LeatherGloves = Item('Leather Gloves',15,0,5,0,'LeftHand')
+LeatherHelmet = Item('Leather Helmet', 15, 0, 5, 0, 5, 'Helmet')
+LeatherChestplate = Item('Leather Chestplate', 25, 0, 7, 5, 7, 'Chestplate')
+LeatherLeggins = Item('Leather Leggins', 15, 0, 5, 0, 5, 'Leggins')
+LeatherGloves = Item('Leather Gloves', 15, 0, 5, 0, 3, 'LeftHand')
 #---Iron---
-IronHelmet = Item('Iron Helmet',50,0,5,5,'Helmet',[WarriorClass])
-IronChestplate = Item('Iron Chestplate',100,0,30,10,'Chestplate',[WarriorClass])
-IronLeggins = Item('Iron Leggins',50,0,10,0,'Leggins',[WarriorClass])
-IronShield = Item('Iron Shield',70,-10,20,0,'LeftHand',[WarriorClass])
-IronSword = Item('Iron Sword',40,10,0,0,'RightHand',[WarriorClass])
-IronDagger = Item('Iron Dagger',25,7,0,0,'RightHand',[RangerClass,MageClass])
+IronHelmet = Item('Iron Helmet', 50, 0, 5, 5, 0, 'Helmet', [WarriorClass])
+IronChestplate = Item('Iron Chestplate', 100, 0, 30, 10, -5, 'Chestplate', [WarriorClass])
+IronLeggins = Item('Iron Leggins', 50, 0, 10, 0, -2, 'Leggins', [WarriorClass])
+IronShield = Item('Iron Shield', 70, -5, 20, 0, -10, 'LeftHand', [WarriorClass])
+IronSword = Item('Iron Sword', 40, 10, 0, 0, -5, 'RightHand', [WarriorClass])
+IronDagger = Item('Iron Dagger', 25, 7, 0, 0, 2, 'RightHand', [RangerClass,MageClass])
 #---Wooden---
-WoodenShield = Item('Wooden Shield',15,-5,10,0,'LeftHand',[WarriorClass])
-WoodenSword = Item('Wooden Sword',15,5,0,0,'RightHand',[WarriorClass])
-WoodenBow = Item('Wooden Bow',20,10,0,0,'RightHand',[RangerClass])
+WoodenShield = Item('Wooden Shield', 15, -3, 10, 0, -5, 'LeftHand', [WarriorClass])
+WoodenSword = Item('Wooden Sword', 15, 5, 0, 0, 0, 'RightHand', [WarriorClass])
+WoodenBow = Item('Wooden Bow', 20, 10, 0, 0, 3, 'RightHand', [RangerClass])
 #---Magic---
-BegginersWand = Item('Begginers Wand',45,10,0,0,'RightHand',[MageClass])
-StudentCape = Item('Student Cape',100,5,5,5,'Chestplate',[MageClass])
-WizardHat = Item('Wizard Hat',75,5,5,0,'Helmet',[MageClass])
-MagicTome = Item('Magic Tome',50,10,0,0,'LeftHand',[MageClass])
-MagicOrb = Item('Magic Orb',120,20,0,0,'LeftHand',[MageClass])
+BegginersWand = Item('Begginers Wand', 45, 10, 0, 0, 5, 'RightHand', [MageClass])
+StudentCape = Item('Student Cape', 100, 5, 5, 5, 10, 'Chestplate', [MageClass])
+WizardHat = Item('Wizard Hat', 75, 5, 5, 0, 4, 'Helmet', [MageClass])
+MagicTome = Item('Magic Tome', 50, 10, 0, 0, 5, 'LeftHand', [MageClass])
+MagicOrb = Item('Magic Orb', 120, 20, 0, 0, 0, 'LeftHand', [MageClass])
 #---Other---
-Chainmail = Item('Chainmail',35,0,10,5,'Chestplate',[RangerClass,WarriorClass])
+Chainmail = Item('Chainmail', 35, 0, 10, 5, -5, 'Chestplate', [RangerClass,WarriorClass])
 
 
 #----Zombie----
