@@ -8,7 +8,7 @@ from Instances import *
 
 #----Window-Setup-----#
 Game.disable_quickedit()
-Game.window('Game',50,35)
+Game.window('Game',55,30)
 #Set font size to 20
 FontSize.run(22)
 
@@ -16,8 +16,8 @@ layout = Engine.Layout()
 console = Engine.Console()
 
 layout.split_column(
-    Engine.Layout(name='Main',ratio=1),
-    Engine.Layout(name='SideSplit',ratio=2)
+    Engine.Layout(name='Main',ratio=3),
+    Engine.Layout(name='SideSplit',ratio=5)
 )
 layout["SideSplit"].split_row(
     Engine.Layout(name='Side',ratio=1),
@@ -44,11 +44,9 @@ class Player:
             'Defence' : 1,
             'Speed' : 1
         }
-        self.Gold = 0
+        self.Gold = 40
         self.Inventory = []
-        self.Potions = {
-            'Health Potion' : 5
-        }
+        self.Potions = []
         self.Equiped = {
             'Helmet' : None,
             'Chestplate' : None,
@@ -62,30 +60,16 @@ class Player:
         self.EquipmentSpeed = 0
         self.CurrentSaveFileName = None
 
-    def UseItem(self,Name):
-        if len(player.Inventory) <= 0: return
-        for x in player.Inventory:
-            if Name == x.name:
-                layout["Side"].update(Engine.Panel(x.Use(self),title="Inventory")) 
-                self.RecalculateStatsFromEquipment()
-                Game.wait_for_input()
-                break
-    
-    def SellItem(self,Item):
-        if len(self.Inventory) <= 0: return False
-        for x in self.Inventory:
-            if Item == x:
-                self.Inventory.remove(x)
-                self.Gold += x.Price
-                return True
-        return False
-    
-    def BuyItem(self,Item):
-        if self.Gold >= Item.Price:
-            self.Gold -= Item.Price
-            self.Inventory.append(Item)
-            return True
-        return False
+    # def UseItem(self,item):
+    #     PlayerInventories = []
+    #     PlayerInventories.extend(self.Inventory)
+    #     PlayerInventories.extend(self.Potions)
+    #     if len(PlayerInventories) <= 0: return
+    #     for x in PlayerInventories:
+    #         if item == x:
+    #             layout["Side"].update(Engine.Panel(x.Use(self),title="Inventory")) 
+    #             Game.wait_for_input()
+    #             break
     
     def RemoveEquipment(self,EquipedItem):
         item = Item.FindItem(EquipedItem)
@@ -97,38 +81,15 @@ class Player:
             return Engine.Text("You've taken off a %s" % item.name)
         return Engine.Text("You don't have that item equiped")
 
-    def UsePotion(self,Name:str):
-        self.PotionHealProcent = 0.25
-        SideText = Engine.Text("")
-        match Name:
-            case 'Health Potion':
-                if self.Potions[Name] <= 0:
-                    SideText.append("You don't have any Health Potions")
-                    layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
-                    Game.wait_for_input()
-                    return
-                if self.GetHealth() < self.GetMaxHealth():
-                    self.Potions[Name] -= 1
-                    HealthBefore = round(player.GetHealth())
-                    Heal = round(player.GetMaxHealth() * self.PotionHealProcent)
-                    player.SetHealth(player.GetHealth() + Heal)
-                    HealthAfter = round(player.GetHealth())
-                    HealValue = HealthAfter - HealthBefore
-                    SideText.append("You've used a Health Potion\n")
-                    SideText.append("It healed you for %s \n" %HealValue)
-                    SideText.append("Current health %s/%s \n" %(round(player.GetHealth()),player.GetMaxHealth()))
-                    layout['Side'].update(Engine.Panel(SideText,title="Inventory",style="%s" %PANEL_COLOR))
-                    Game.wait_for_input()
-    
     def SetAllStats(self,NewStats,NewClass):
         self.Class = NewClass
         self.Stats = NewStats
     
     def ResetStats(self):
         self.Class = None
-        self.Gold = 0
+        self.Gold = 40
         self.Inventory = []
-        self.Potions['Health Potion'] = 5
+        self.Potions = []
         self.Equiped = {
             'Helmet' : None,
             'Chestplate' : None,
@@ -154,7 +115,7 @@ class Player:
     def AddStatsFromEquipment(self):
         for equipment in self.Equiped:
             if self.Equiped[equipment] != None:
-                item = Item.FindItem(self.Equiped[equipment])
+                item = Equipment.FindItem(self.Equiped[equipment])
                 self.EquipmentMaxHealth += item.MaxHealth
                 self.EquipmentAttack += item.Damage
                 self.EquipmentDefence += item.Defence
@@ -177,6 +138,7 @@ class Player:
     @staticmethod
     def Die():
         player.ResetStats()
+        for x in Potion.PotionBase: x.StackedPotions = 1
 
     def GetHealth(self):
         return self.Stats['Health']
@@ -259,9 +221,14 @@ def AutoSave():
 
 def Save(SaveName:str):
     items = []
+    potions = []
+    potionsAmmount = []
     equiped = player.Equiped
     for x in player.Inventory:
         items.append(x.name)
+    for _, potion in enumerate(player.Potions):
+        potions.append(potion.name)
+        potionsAmmount.append(potion.StackedPotions)
     Save = {
         "PlayerClass": player.Class,
         "Player" : {
@@ -274,7 +241,8 @@ def Save(SaveName:str):
         "Inventory" : {
             'Gold' : player.Gold,
             'Items' : items,
-            'Potions' : player.Potions,
+            'Potions' : potions,
+            'PotionStackAmmount' : potionsAmmount,
             'Equiped' : equiped
         },
         "EquipmentBonus" : {
@@ -312,12 +280,21 @@ def Load(SaveName:str):
                 return 0
     player.SetAllStats(data['Player'],data["PlayerClass"])
     player.Gold = data['Inventory']['Gold']
-    player.Potions = data['Inventory']['Potions']
     player.Equiped = data['Inventory']['Equiped']
     player.EquipmentMaxHealth = data['EquipmentBonus']["MaxHealth"]
     player.EquipmentAttack = data['EquipmentBonus']["Attack"]
     player.EquipmentDefence = data['EquipmentBonus']["Defence"]
     player.EquipmentSpeed = data['EquipmentBonus']["Speed"]
+    for index, x in enumerate(data['Inventory']['Potions']):
+        AddPotion = Item.FindItem(x)
+        AddPotion.StackedPotions = data['Inventory']['PotionStackAmmount'][index]
+        # if len(player.Potions) > 0:
+        #     for potion in player.Potions:
+        #         if potion == AddPotion:
+        #             potion.StackedPotions += 1
+        #         else:
+        #             player.Potions.append(AddPotion)
+        player.Potions.append(AddPotion)
     for x in data['Inventory']['Items']:
         for y in Item.ItemBase:
             if x == y.name:
@@ -326,15 +303,29 @@ def Load(SaveName:str):
 
 def GenerateItemsSelled():
     SelledItems = []
-    while len(SelledItems) <= 10:
-        rng = random.randrange(0,len(Item.ItemBase))
-        item = Item.ItemBase[rng]
-        isActive = False
-        for ActiveItem in SelledItems:
-            if ActiveItem == item:
-                isActive = True
-                break
-        if isActive == False: SelledItems.append(item)
+    Potions = []
+    CommonItems = []
+    UncommonItems = []
+    RareItems = []
+    while len(CommonItems)+len(UncommonItems)+len(RareItems)+len(Potions) <= 10:
+        RandomItem = Equipment.EquipmentBase[random.randrange(len(Equipment.EquipmentBase))]
+        RandomPotion = Potion.PotionBase[random.randrange(0,len(Potion.PotionBase))]
+        if len(Potions) < 2:
+            Potions.append(RandomPotion)
+        match RandomItem.Rarity:
+            case 'C':
+                if not RandomItem in CommonItems: CommonItems.append(RandomItem)
+            case 'U':
+                if len(UncommonItems) < 3:
+                    if not RandomItem in UncommonItems: UncommonItems.append(RandomItem)
+            case 'R':
+                if len(RareItems) < 1:
+                    if not RandomItem in RareItems: RareItems.append(RandomItem)
+
+    SelledItems.extend(Potions)
+    SelledItems.extend(CommonItems)
+    SelledItems.extend(UncommonItems)
+    SelledItems.extend(RareItems)
     return SelledItems
 
 def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS BUT WITH THE CHANGED USE FUNCTION
@@ -344,7 +335,9 @@ def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS B
     layout['Shop'].visible = True
     CurrentPage = 0
     ItemsPerPage = 10
+    SellPriceModifier = 0.6
     while True:
+        PriceModifier = SellPriceModifier if ActiveWindow == 0 else 1
         Pages = [[]]
         LoopedPage = 0
         for x in player.Inventory:
@@ -357,8 +350,9 @@ def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS B
         ShopText = Engine.Text()
         SideText = Engine.Text()
         if ActiveWindow == 0: ExitIndex = len(Pages[CurrentPage])
-        else: ExitIndex = len(ShopItems)+1
+        else: ExitIndex = len(ShopItems)
         if TargetOption > ExitIndex: TargetOption = ExitIndex
+
         if len(Pages[CurrentPage]) > 0:
             for index, Item in enumerate(Pages[CurrentPage]):
                 if index == TargetOption and ActiveWindow == 0: 
@@ -368,13 +362,8 @@ def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS B
         if TargetOption == ExitIndex and ActiveWindow == 0: SideText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
         else: SideText.append("Go back \n")
 
-        if TargetOption == 0 and ActiveWindow == 1:
-            ShopText.append("> Health Potion\n" ,style="u %s" %HIGH_LIGHT_COLOR)
-            TargetItem = "Health Potion"
-        else: ShopText.append("Health Potion\n")
-
         for index, Item in enumerate(ShopItems):
-            if index+1 == TargetOption and ActiveWindow == 1: 
+            if index == TargetOption and ActiveWindow == 1: 
                 ShopText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
                 TargetItem = Item
             else: ShopText.append("%s \n" % Item.name)
@@ -382,7 +371,7 @@ def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS B
         else: ShopText.append("Go back \n")
         
         if TargetItem == "Health Potion": layout['Main'].update(Engine.Panel(Engine.Text("Health Potion\nPrice: 10 Gold"),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
-        elif TargetItem != None: layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
+        elif TargetItem != None: layout['Main'].update(Engine.Panel(TargetItem.ShowStats(PriceModifier),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
         else: layout['Main'].update(Engine.Panel(player.PrintStats(),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
 
         layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage+1}/{len(Pages)}" if len(Pages) > 1 else "Inventory",style="%s" %PANEL_COLOR))
@@ -411,17 +400,13 @@ def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS B
                     return
                 if TargetItem != None:
                     if ActiveWindow == 0: 
-                        if player.SellItem(TargetItem) == True:
+                        if TargetItem.SellItem(player,TargetItem) == True:
                             ShopItems.append(TargetItem)
                     if ActiveWindow == 1:
-                        if TargetItem == "Health Potion":
-                            if player.Gold >= 10:
-                                player.Gold -= 10
-                                player.Potions["Health Potion"] += 1
-                        elif player.BuyItem(TargetItem) == True:
+                        if TargetItem.BuyItem(player,TargetItem) == True:
                             ShopItems.remove(TargetItem)
 
-def ShowInventory(): 
+def ShowInventory():   # DIVIDE INVENTORY IN 2 SECTIONS JUST LIKE IN THE SHOP SO ONE SECTION IS FOR POTIONS AND ONE FOR INVENTORY
     TargetOption = 0
     CurrentPage = 0
     ItemsPerPage = 10
@@ -438,25 +423,27 @@ def ShowInventory():
         ExitIndex = len(player.Potions) + len(Pages[CurrentPage])
         if TargetOption > ExitIndex: TargetOption = ExitIndex
         SideText = Engine.Text("")
-        SideText.append("Potions: \n")
-        for index, name in enumerate(player.Potions):
-            if index == TargetOption: 
-                SideText.append("> %s - %s\n" % (name,player.Potions[name]) ,style="u %s" %HIGH_LIGHT_COLOR)
-                TargetItem = name
-            else: SideText.append("%s - %s\n" % (name,player.Potions[name]))
-        SideText.append("\nItems: \n")
+
+        if len(player.Potions) > 0:
+            SideText.append("Potions: \n")
+            for index, Potion in enumerate(player.Potions):
+                if index == TargetOption: 
+                    SideText.append("> %s - %s\n" %(Potion.name,Potion.StackedPotions) ,style="u %s" %HIGH_LIGHT_COLOR)
+                    TargetItem = Potion
+                else: SideText.append("%s - %s\n" %(Potion.name,Potion.StackedPotions))
+        
         if len(Pages[CurrentPage]) > 0:
+            SideText.append("Items: \n")
             for index, ItemObject in enumerate(Pages[CurrentPage]):
                 if index+len(player.Potions) == TargetOption: 
                     SideText.append("> %s \n" % ItemObject.name ,style="u %s" %HIGH_LIGHT_COLOR)
-                    TargetItem = ItemObject.name
+                    TargetItem = ItemObject
                 else: SideText.append("%s \n" % ItemObject.name)
             
         if TargetOption == ExitIndex: SideText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
         else: SideText.append("Go back \n")
 
-        ItemStats = Item.FindItem(TargetItem)
-        if ItemStats != None: layout['Main'].update(Engine.Panel(ItemStats.ShowStats(),title="Player",style="%s" %PANEL_COLOR))
+        if TargetItem != None: layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title="Player",style="%s" %PANEL_COLOR))
         else: layout['Main'].update(Engine.Panel(player.PrintStats(),title="Player",style="%s" %PANEL_COLOR))
 
         layout['Side'].update(Engine.Panel(SideText,title=f"Inventory Page {CurrentPage+1}/{len(Pages)}" if len(Pages) > 1 else "Inventory",style="%s" %PANEL_COLOR))
@@ -476,8 +463,8 @@ def ShowInventory():
             case Key.KEY_enter | Key.KEY_space :
                 if TargetOption == ExitIndex: return
                 if TargetItem != None:
-                    player.UsePotion(TargetItem)
-                    player.UseItem(TargetItem)
+                    layout['Side'].update(Engine.Panel(TargetItem.UseItem(player,TargetItem),title=f"Inventory Page {CurrentPage+1}/{len(Pages)}" if len(Pages) > 1 else "Inventory",style="%s" %PANEL_COLOR))
+                    Game.wait_for_input()
 
 def ShowEquipment():
     TargetOption = 0
@@ -510,7 +497,7 @@ def ShowEquipment():
                 if TargetOption == ExitIndex: return
                 if TargetItem != None:
                     layout['Side'].update(Engine.Panel(player.RemoveEquipment(TargetItem),title="Equipement",style="%s" %PANEL_COLOR))
-                    time.sleep(1)
+                    Game.wait_for_input()
 
 def ChooseCharacter():
     layout['Side'].update(Engine.Panel(Engine.Text("Choose your character!"),style="%s" %PANEL_COLOR))
@@ -641,7 +628,7 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
 def NextTurn():
     MainText = Engine.Text("You took a next turn")
     layout['Main'].update(Engine.Panel(MainText,title=f"Health {player.GetHealth()}/{player.GetMaxHealth()}",style="%s" %PANEL_COLOR))
-    rng = random.randint(0,100)
+    rng = random.randrange(0,100)
     SideText = Engine.Text("",justify="center")
     if rng in range(-1,15):
         SideText.append('You found a place to rest\n')
@@ -651,7 +638,7 @@ def NextTurn():
         SideText.append("And recoverd %s Health\n" % HpRested).stylize("green",39,46+len(str(HpRested)))
         SideText.append("Current Health %s/%s" %(round(player.GetHealth()),player.GetMaxHealth()))
         layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
-    elif rng in range(16,80):
+    elif rng in range(15,80):
         RandomEnemy = Monster.RollNextEnemy()
         TargetOption = 0
         while True:
@@ -681,13 +668,18 @@ def NextTurn():
                     Game.wait_for_input()
                     Fight(RandomEnemy)
                     return
-    elif rng in range(81,95):
-        player.Potions['Health Potion'] += 1
-        SideText.append('Wow! you found a\nHealing potion\nYou now have %s' % player.Potions['Health Potion']).stylize("green",17,31)
+    elif rng in range(80,95):
+        if len(player.Potions) > 0:
+            for potion in player.Potions:
+                if potion == RegularHealthPotion: 
+                    potion.StackedPotions += 1
+                    break
+        else: player.Potions.append(RegularHealthPotion)
+        SideText.append('Wow! you found a\nHealing potion\n').stylize("green",17,31)
         layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
-    elif rng in range(96,101):
-        rngItem = random.randint(0,len(Item.ItemBase)-1)
-        founditem = Item.ItemBase[rngItem]
+    elif rng in range(95,101):
+        rngItem = random.randrange(0,len(Equipment.EquipmentBase))
+        founditem = Equipment.EquipmentBase[rngItem]
         player.Inventory.append(founditem)
         SideText.append('You found an\n %s \nlying on the ground' % founditem.name).stylize("green",14,14+len(founditem.name))
         layout['Side'].update(Engine.Panel(SideText,style="%s" %PANEL_COLOR))
@@ -836,3 +828,5 @@ if __name__ == '__main__':
     with Engine.Live(layout,refresh_per_second=60,screen=True) as live:
         Menu()
     FontSize.run(16)
+
+# TODO ADD FUR ARMOR FOR RANGER AND MORE MAGIC ARMOR FOR A MAGE
