@@ -26,12 +26,13 @@ layout["SideSplit"].split_row(
 #----Window-Setup-----#
 
 #---------
-GameVersion = "0.0.7"
+GameVersion = "0.0.8"
 SaveFilePath = os.getenv('APPDATA')+"\SuperNiceGame"
 if not os.path.exists(SaveFilePath):
     os.mkdir(SaveFilePath)
 HIGH_LIGHT_COLOR = "green"
 PANEL_COLOR = "bright_white"
+GO_BACK_COLOR = "dark_orange"
 #--------- # TODO ADD OPTION MENU WITH OPTION TO CHANGE COLORS AND ENABLE OR DISABLE AUTOSAVE AND MORE IN THE FUTURE
 
 class Player:
@@ -59,17 +60,6 @@ class Player:
         self.EquipmentDefence = 0
         self.EquipmentSpeed = 0
         self.CurrentSaveFileName = None
-
-    # def UseItem(self,item):
-    #     PlayerInventories = []
-    #     PlayerInventories.extend(self.Inventory)
-    #     PlayerInventories.extend(self.Potions)
-    #     if len(PlayerInventories) <= 0: return
-    #     for x in PlayerInventories:
-    #         if item == x:
-    #             layout["Side"].update(Engine.Panel(x.Use(self),title="Inventory")) 
-    #             Game.wait_for_input()
-    #             break
     
     def RemoveEquipment(self,EquipedItem):
         item = Item.FindItem(EquipedItem)
@@ -196,7 +186,8 @@ def SavesMenu():
             else: SideText.append('%s \n' % name.split(".")[0])
             
         MainText.append('\nChoose a save file you want to load')
-        if ExitIndex == Target: SideText.append('> Go to menu',style="u %s" %HIGH_LIGHT_COLOR)
+        if Target == len(saves) and Target == ExitIndex: SideText.append('> Go to menu',style="u %s" %GO_BACK_COLOR)
+        elif ExitIndex == Target: SideText.append('> Go to menu',style="u %s" %HIGH_LIGHT_COLOR)
         else: SideText.append('Go to menu')
 
         layout['Main'].update(Engine.Panel(MainText,style="%s" %PANEL_COLOR))
@@ -359,7 +350,7 @@ def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS B
                     SideText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
                     TargetItem = Item
                 else: SideText.append("%s \n" % Item.name)
-        if TargetOption == ExitIndex and ActiveWindow == 0: SideText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
+        if TargetOption == ExitIndex and ActiveWindow == 0: SideText.append("> Go back \n" ,style="u %s" %GO_BACK_COLOR)
         else: SideText.append("Go back \n")
 
         for index, Item in enumerate(ShopItems):
@@ -367,7 +358,7 @@ def Shop(SelledItems):  # TODO REDO THE POTIONS TO INHERIT FROM THE ITEM CLASS B
                 ShopText.append("> %s \n" % Item.name ,style="u %s" %HIGH_LIGHT_COLOR)
                 TargetItem = Item
             else: ShopText.append("%s \n" % Item.name)
-        if TargetOption == ExitIndex and ActiveWindow == 1: ShopText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
+        if TargetOption == ExitIndex and ActiveWindow == 1: ShopText.append("> Go back \n" ,style="u %s" %GO_BACK_COLOR)
         else: ShopText.append("Go back \n")
         
         if TargetItem == "Health Potion": layout['Main'].update(Engine.Panel(Engine.Text("Health Potion\nPrice: 10 Gold"),title=f"Gold: {player.Gold}",style="%s" %PANEL_COLOR))
@@ -440,7 +431,7 @@ def ShowInventory():   # DIVIDE INVENTORY IN 2 SECTIONS JUST LIKE IN THE SHOP SO
                     TargetItem = ItemObject
                 else: SideText.append("%s \n" % ItemObject.name)
             
-        if TargetOption == ExitIndex: SideText.append("> Go back \n" ,style="u %s" %HIGH_LIGHT_COLOR)
+        if TargetOption == ExitIndex: SideText.append("> Go back \n" ,style="u %s" %GO_BACK_COLOR)
         else: SideText.append("Go back \n")
 
         if TargetItem != None: layout['Main'].update(Engine.Panel(TargetItem.ShowStats(),title="Player",style="%s" %PANEL_COLOR))
@@ -478,7 +469,7 @@ def ShowEquipment():
                 EquipmentText.append("> %s - %s \n" %(name,ItemName) ,style="u %s" %HIGH_LIGHT_COLOR)
                 TargetItem = ItemName
             else: EquipmentText.append("%s - %s \n" %(name,ItemName))
-        if TargetOption == ExitIndex: EquipmentText.append("> Go back" ,style="u %s" %HIGH_LIGHT_COLOR)
+        if TargetOption == ExitIndex: EquipmentText.append("> Go back" ,style="u %s" %GO_BACK_COLOR)
         else: EquipmentText.append("Go back")
 
         ItemStats = Item.FindItem(TargetItem)
@@ -508,7 +499,7 @@ def ChooseCharacter():
         for index , _ in enumerate(CharacterClass.Classes):
             if TargetCharacter == index: text.append(f"> {CharacterClass.Classes[index].Name}\n" ,style="u %s" %HIGH_LIGHT_COLOR)
             else: text.append(f"{CharacterClass.Classes[index].Name}\n")
-        if TargetCharacter == ExitIndex: text.append("> Go to menu" ,style="u %s" %HIGH_LIGHT_COLOR)
+        if TargetCharacter == ExitIndex: text.append("> Go to menu" ,style="u %s" %GO_BACK_COLOR)
         else: text.append("Go to menu")
 
         layout['Main'].update(Engine.Panel(text,title="Character Select",style="%s" %PANEL_COLOR))
@@ -556,7 +547,8 @@ def Fight(Monster):  # TODO ADD EVADE CHANCE TO FIGHTS AND TRYING TO ESCAPE THE 
         SideText = Engine.Text("")
 
         for index , Option in enumerate(Options):
-            if TargetOption == index: MainText.append("> %s \n" %Option ,style="u %s" %HIGH_LIGHT_COLOR)
+            if index == ExitIndex and TargetOption == ExitIndex: MainText.append("> %s \n" %Option ,style="u %s" %GO_BACK_COLOR)
+            elif TargetOption == index: MainText.append("> %s \n" %Option ,style="u %s" %HIGH_LIGHT_COLOR)
             else: MainText.append("%s \n" %Option)
 
         SideText.append("You're now fighting %s \n"%enemy.name).stylize("red", 20,20+len(enemy.name))
@@ -703,7 +695,8 @@ def Play():
             return 0
         MainText = Engine.Text("")
         for index , name in enumerate(Options):
-            if index == TargetOption: MainText.append("> %s \n" %name ,style="u %s" %HIGH_LIGHT_COLOR)
+            if index == len(Options)-1 and index == TargetOption: MainText.append("> %s \n" %name ,style="u %s" %GO_BACK_COLOR)
+            elif index == TargetOption: MainText.append("> %s \n" %name ,style="u %s" %HIGH_LIGHT_COLOR)
             else: MainText.append("%s \n" %name)
 
         layout['Main'].update(Engine.Panel(MainText,title="Game",style="%s" %PANEL_COLOR))
@@ -783,7 +776,8 @@ def Menu():
         MainText = Engine.Text("")
         layout['Side'].update(Engine.Panel(GameNamePrint(),style="%s" %PANEL_COLOR))
         for index, name in enumerate(options):
-            if TargetOption == index: MainText.append("> %s \n" %name ,style="u %s" %HIGH_LIGHT_COLOR)
+            if index == len(options)-1 and TargetOption == index: MainText.append("> %s \n" %name ,style="u %s" %GO_BACK_COLOR)
+            elif TargetOption == index: MainText.append("> %s \n" %name ,style="u %s" %HIGH_LIGHT_COLOR)
             else: MainText.append("%s \n" %name)
 
         layout['Main'].update(Engine.Panel(MainText,title="Menu" ,style="%s" %PANEL_COLOR))
